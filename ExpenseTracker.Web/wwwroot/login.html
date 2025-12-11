@@ -1,0 +1,58 @@
+﻿
+    <!doctype html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Expense Tracker — Login</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <link rel="stylesheet" href="./styles.css" />
+    </head>
+    <body>
+        <main style="max-width:420px;margin:60px auto;">
+            <section class="panel">
+                <h2>Sign in</h2>
+                <form id="form-login">
+                    <label>
+                        Username
+                        <input id="login-username" type="text" required />
+                    </label>
+                    <label>
+                        Password
+                        <input id="login-password" type="password" required />
+                    </label>
+                    <button type="submit">Sign in</button>
+                    <div id="login-msg" class="muted"></div>
+                </form>
+            </section>
+        </main>
+
+        <script src="app.js"></script>
+        <script>
+    // page-specific login wiring
+    (function () {
+      const byId = id => document.getElementById(id);
+      const setMsg = (id, text, err = false) => {
+        const el = byId(id); el.textContent = text; el.className = err ? 'error' : 'muted';
+      };
+
+      document.getElementById('form-login').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        setMsg('login-msg', 'Signing in...');
+        try {
+          const username = byId('login-username').value.trim();
+          const password = byId('login-password').value;
+          const { token } = await authLogin({ username, password }); // from app.js
+          // store token and basic decoded info
+          localStorage.setItem('jwt', token);
+          const info = decodeJwt(token);
+          localStorage.setItem('currentUser', JSON.stringify(info));
+          // go to dashboard
+          location.href = '/dashboard.html';
+        } catch (err) {
+          setMsg('login-msg', (err && err.message) || String(err), true);
+        }
+      });
+    })();
+        </script>
+    </body>
+</html>

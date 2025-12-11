@@ -1,0 +1,252 @@
+﻿
+:root {
+    --bg: #0f172a;
+    --panel: #111827;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --accent: #22c55e;
+    --accent-600: #16a34a;
+    --accent-700: #15803d;
+    --danger: #ef4444;
+    --danger-700: #b91c1c;
+    --warning: #f59e0b;
+    --border: #1f2937;
+    --input-bg: #0b1220;
+    --input-border: #1f2937;
+    --input-focus: rgba(34, 197, 94, .35);
+    --shadow: rgba(0, 0, 0, .35);
+}
+
+html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+header {
+    padding: 16px 24px;
+    background: #0b1220;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+    header h1 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+main {
+    padding: 24px;
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1fr;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 6px 20px var(--shadow);
+}
+
+    .panel h2 {
+        margin: 0 0 14px;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+form {
+    display: grid;
+    gap: 14px;
+}
+
+/* Grid helpers */
+.row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 900px) {
+    .row, .grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Labels & inputs */
+label {
+    display: grid;
+    gap: 8px;
+    font-size: .92rem;
+}
+
+input, select, textarea, button {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+    input[type="number"] {
+        text-align: right;
+    }
+
+    /* Focus states */
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--input-focus);
+    }
+
+    /* Disabled state */
+    input[disabled], select[disabled], textarea[disabled], button[disabled] {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+
+/* Textarea sizing */
+textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+
+/* Buttons */
+button {
+    background: var(--accent);
+    color: #052e1a;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: .2px;
+}
+
+    button:hover {
+        background: var(--accent-600);
+    }
+
+    button:active {
+        background: var(--accent-700);
+    }
+
+    button.secondary {
+        background: #374151;
+        color: var(--text);
+    }
+
+        button.secondary:hover {
+            background: #4b5563;
+        }
+
+/* Messages */
+.muted {
+    color: var(--muted);
+    font-size: .85rem;
+}
+
+.error {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+/* Chips (if you later render selected tags badges) */
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    border: 1px dashed var(--border);
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: .8rem;
+    color: var(--muted);
+}
+
+/* --- Multi-select: better UX for #exp-tags --- */
+select[multiple],
+#exp-tags {
+    min-height: 140px; /* taller box for multiple options */
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+}
+
+    /* WebKit scrollbar (Chrome/Edge) */
+    #exp-tags::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    #exp-tags::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 8px;
+    }
+
+    #exp-tags::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    /* Options inside multi-select */
+    #exp-tags option {
+        padding: 8px 10px;
+        margin: 2px 4px;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text);
+    }
+
+        /* Selected option visual (keeps dark theme readable) */
+        #exp-tags option:checked {
+            background: linear-gradient(0deg, rgba(34,197,94,0.2), rgba(34,197,94,0.2));
+            color: var(--text);
+        }
+
+    /* Keyboard focus ring on options (browser dependent) */
+    #exp-tags:focus option:checked {
+        outline: 1px dashed var(--accent);
+        outline-offset: 2px;
+    }
+
+/* Labels for small helpers under selects */
+#users-msg, #tags-msg, #exp-msg {
+    display: block;
+    margin-top: 6px;
+}
+
+/* Inline header action buttons area */
+header .secondary {
+    margin-left: 8px;
+}
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+
+.sr-only {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,1,1);
+    white-space: nowrap;
+    border: 0;
+}

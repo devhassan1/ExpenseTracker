@@ -1,0 +1,200 @@
+﻿
+    <!doctype html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Expense Tracker — Dashboard</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <link rel="stylesheet" href="./styles.css" />
+    </head>
+    <body>
+        <header>
+            <h1>Expense Tracker</h1>
+            <div style="margin-left:auto;padding-right:18px;">
+                <button id="btn-add" class="secondary">Add Expense</button>
+                <button id="btn-logout" class="secondary">Sign out</button>
+            </div>
+        </header>
+
+        <main>
+            <section class="panel">
+                <h2>My Expenses</h2>
+
+                <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+                    <label>
+                        From
+                        <input id="filter-from" type="date" />
+                    </label>
+                    <label>
+                        To
+                        <input id="filter-to" type="date" />
+                    </label>
+                    <label>
+                        Format
+                        <select id="export-format">
+                            <option value="csv">CSV</option>
+                            <option value="excel">Excel</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </label>
+                    <button id="btn-export">Download Report</button>
+                    <div style="flex:1;"></div>
+                </div>
+
+                <div id="list-msg" class="muted" style="margin-top:8px;"></div>
+
+                <table id="expenses-table" style="width:100%;margin-top:12px;border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Date</th>
+                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Amount</th>
+                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Currency</th>
+                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Description</th>
+                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Tags</th>
+                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">User</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenses-body"></tbody>
+                </table>
+            </section>
+
+            <!-- SuperAdmin area: manage users -->
+            <section class="panel" id="superadmin-panel" style="display:none;">
+                <h2>All Users (SuperAdmin)</h2>
+                <div id="sa-msg" class="muted"></div>
+                <table id="users-table" style="width:100%;margin-top:12px;border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding:8px;border-bottom:1px solid #222">ID</th>
+                            <th style="padding:8px;border-bottom:1px solid #222">Name</th>
+                            <th style="padding:8px;border-bottom:1px solid #222">Email</th>
+                            <th style="padding:8px;border-bottom:1px solid #222">Role</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-body"></tbody>
+                </table>
+            </section>
+        </main>
+
+        <script src="app.js"></script>
+        <script>
+    (function () {
+      const byId = id => document.getElementById(id);
+      const setMsg = (id, text, err=false) => { const el=byId(id); el.textContent=text; el.className = err?'error':'muted'; };
+
+      // redirect if not logged in
+      const token = localStorage.getItem('jwt');
+      if (!token) location.href = '/login.html';
+      const info = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      const isSuper = (info?.roles || []).includes('SuperAdmin');
+
+      // wire buttons
+      byId('btn-logout').addEventListener('click', () => { localStorage.removeItem('jwt'); localStorage.removeItem('currentUser'); location.href='/login.html'; });
+      byId('btn-add').addEventListener('click', () => location.href = '/add-expense.html');
+
+      // show superadmin panel if role
+      if (isSuper) {
+        document.getElementById('superadmin-panel').style.display = 'block';
+        loadAllUsers();
+      }
+
+      // load own expenses (or all for superadmin)
+      loadExpenses();
+
+      byId('btn-export').addEventListener('click', async () => {
+        try {
+          const from = byId('filter-from').value;
+          const to = byId('filter-to').value;
+          const fmt = byId('export-format').value;
+          setMsg('list-msg', 'Preparing report...');
+          // if superadmin allowed to download all, don't pass forUserId; otherwise pass current user
+          const forUserId = isSuper ? null : info.userId;
+          await exportReport({ from, to, forUserId, format: fmt });
+          setMsg('list-msg', 'Report downloaded.');
+        } catch (err) {
+          setMsg('list-msg', err.message || String(err), true);
+        }
+      });
+
+      async function loadExpenses() {
+        try {
+          setMsg('list-msg', 'Loading expenses...');
+          // backend List endpoint expects from & to and optional forUserId. We'll default to last 30 days
+          const to = new Date();
+          const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
+          const qFrom = toIsoDate(from);
+          const qTo = toIsoDate(to);
+          const forUserId = isSuper ? null : info.userId;
+          const url = `/api/expenses?from=${encodeURIComponent(qFrom)}&to=${encodeURIComponent(qTo)}${forUserId ? `&forUserId=${forUserId}` : ''}`;
+          const list = await getJSON(url);
+          renderExpenses(list);
+          setMsg('list-msg', 'Loaded ' + (list?.length ?? 0) + ' items.');
+        } catch (err) {
+          setMsg('list-msg', err.message || String(err), true);
+        }
+      }
+
+      function renderExpenses(items) {
+        const body = byId('expenses-body');
+        body.innerHTML = '';
+        if (!items || items.length === 0) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td colspan="6" style="padding:12px">No expenses</td>';
+          body.appendChild(tr);
+          return;
+        }
+        for (const e of items) {
+          const tr = document.createElement('tr');
+          const tags = (e.tags || []).map(t => t.label || t).join(', ');
+          tr.innerHTML = `
+            <td style="padding:8px;border-bottom:1px solid #222">${formatDate(e.txnDate)}</td>
+            <td style="padding:8px;border-bottom:1px solid #222">${e.amount}</td>
+            <td style="padding:8px;border-bottom:1px solid #222">${e.currency}</td>
+            <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(e.description || '')}</td>
+            <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(tags)}</td>
+            <td style="padding:8px;border-bottom:1px solid #222">${e.userName ?? e.userId}</td>
+          `;
+          body.appendChild(tr);
+        }
+      }
+
+      async function loadAllUsers() {
+        try {
+          setMsg('sa-msg', 'Loading users...');
+          const users = await getJSON('/api/users');
+          const body = byId('users-body');
+          body.innerHTML = '';
+          for (const u of users) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td style="padding:8px;border-bottom:1px solid #222">${u.id}</td>
+              <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(u.name)}</td>
+              <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(u.email || '')}</td>
+              <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(u.roleName || '')}</td>
+            `;
+            body.appendChild(tr);
+          }
+          setMsg('sa-msg', 'Loaded ' + users.length + ' users.');
+        } catch (err) {
+          setMsg('sa-msg', err.message || String(err), true);
+        }
+      }
+
+      // helpers (available in app.js but safe to repeat)
+      function toIsoDate(d) {
+        // produce yyyy-MM-dd (the backend will parse into DateTime if needed)
+        const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+        return `${y}-${m}-${day}`;
+      }
+      function formatDate(s) {
+        if (!s) return '';
+        const d = new Date(s);
+        return d.toLocaleString();
+      }
+      function escapeHtml(s) {
+        return s.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]);
+      }
+    })();
+        </script>
+    </body>
+</html>

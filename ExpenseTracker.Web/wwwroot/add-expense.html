@@ -1,0 +1,171 @@
+﻿
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Add Expense</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+    <header style="display:flex;align-items:center;">
+        <h1>Add Expense</h1>
+        <div style="margin-left:auto;padding-right:18px;">
+            <button id="btn-back" class="secondary">Back</button>
+            <button id="btn-logout" class="secondary">Sign out</button>
+        </div>
+    </header>
+
+    <main>
+        <section class="panel">
+            <h2>New Expense</h2>
+            <form id="form-expense">
+                <div class="grid-3">
+
+                    <label id="label-owner">
+                        Owner User
+                        <select id="exp-user" name="user" class="form-select"></select>
+                        <small id="users-msg" class="muted"></small>
+                    </label>
+
+                    <label>
+                        Amount (PKR default)
+                        <input type="number" id="exp-amount" step="0.0001" min="0.0001" required />
+                    </label>
+                </div>
+
+                <label>
+                    Description
+                    <textarea id="exp-desc" maxlength="500" placeholder="Optional details..."></textarea>
+                </label>
+
+                <label>
+                    Transaction Date/Time
+                    <input type="datetime-local" id="exp-txn-date" required />
+                </label>
+
+                <label>
+                    Tags (choose one or more)
+                    <!-- MULTI-SELECT (dynamic; options populated by loadTags) -->
+                    <select id="exp-tags" name="TagIds" required multiple class="form-select"></select>
+                    <small id="tags-msg" class="muted"></small>
+                </label>
+
+                <button type="submit">Create Expense</button>
+                <div id="exp-msg" class="muted"></div>
+            </form>
+        </section>
+    </main>
+    <script src="/app.js"></script>
+    <!-- Page script -->
+    <script defer>
+        (function () {
+            // Local aliases to avoid accidental shadowing
+            const $ = (id) => document.getElementById(id);
+            const msg = (id, text, err = false) => {
+                const el = $(id);
+                if (!el) return;
+                el.textContent = text;
+                el.className = err ? 'error' : 'muted';
+            };
+
+            // Back/Logout actions
+            document.addEventListener('DOMContentLoaded', () => {
+                $('btn-back')?.addEventListener('click', () => history.back());
+                $('btn-logout')?.addEventListener('click', () => {
+                    localStorage.removeItem('jwt');
+                    localStorage.removeItem('currentUser');
+                    location.href = '/login.html';
+                });
+            });
+
+            // Require token; redirect if missing
+            const token = localStorage.getItem('jwt');
+            if (!token) {
+                location.href = '/login.html';
+                return;
+            }
+
+            const info = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const roles = Array.isArray(info?.roles) ? info.roles : [];
+            const isSuper = roles.includes('SuperAdmin');
+
+            if (!isSuper) {
+                const ownerLabel = $('label-owner');
+                if (ownerLabel) ownerLabel.style.display = 'none';
+            }
+
+            // Init on DOM ready
+            document.addEventListener('DOMContentLoaded', async () => {
+                try {
+                    // Tags (multi)
+                    await loadTags('exp-tags', { includeGlobal: true });
+
+                    // Users
+                    if (isSuper) {
+                        await loadUsers(null, 'exp-user');
+                    } else {
+                        const sel = $('exp-user');
+                        if (sel) {
+                            const opt = document.createElement('option');
+                            opt.value = info.userId;
+                            opt.textContent = info.username ?? `User ${info.userId}`;
+                            sel.appendChild(opt);
+                        }
+                    }
+
+                    // Transaction date = now (local)
+                    const now = new Date();
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                    const txnInput = $('exp-txn-date');
+                    if (txnInput) txnInput.value = local;
+
+                } catch (err) {
+                    msg('exp-msg', err.message || String(err), true);
+                }
+            });
+
+            // Submit handler (sends tagIds: array)
+            $('form-expense')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const userId = Number($('exp-user').value);
+                    const amount = Number($('exp-amount').value);
+                    const description = ($('exp-desc').value || '').trim() || null;
+
+                    const txnLocal = $('exp-txn-date').value;
+                    if (!txnLocal) throw new Error('Transaction date is required');
+
+                    const txnDate = new Date(txnLocal);
+                    if (isNaN(txnDate)) throw new Error('Invalid transaction date');
+
+                    const tagSel = $('exp-tags');
+                    const tagIds = Array.from(tagSel?.selectedOptions ?? []).map(o => Number(o.value));
+
+                    const payload = {
+                        userId,
+                        createdByUserId: Number(info.userId),
+                        amount,
+                        description,
+                        txnDate: txnDate.toISOString(),
+                        tagIds
+                    };
+
+                    await postJSON('/api/expenses', payload);
+                    msg('exp-msg', 'Expense created.');
+                    $('form-expense').reset();
+
+                    // Re-init date after reset
+                    const now = new Date();
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                    $('exp-txn-date').value = local;
+                } catch (err) {
+                    msg('exp-msg', err.message || String(err), true);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
