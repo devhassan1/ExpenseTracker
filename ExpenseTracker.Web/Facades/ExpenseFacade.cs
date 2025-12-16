@@ -19,6 +19,6 @@ public sealed class ExpenseFacade
     public Task<Result<long>> AddAsync(AddExpenseRequest req, CancellationToken ct)
         => _add.ExecuteAsync(req, ct);
 
-    public Task<Result<IReadOnlyList<ExpenseTracker.Domain.Entities.Expense>>> ListAsync(ExpenseFilterRequest req, CancellationToken ct)
+    public Task<Result<IReadOnlyList<ExpenseListItem>>> ListAsync(ExpenseFilterRequest req, CancellationToken ct)
         => _list.ExecuteAsync(req, ct);
 }

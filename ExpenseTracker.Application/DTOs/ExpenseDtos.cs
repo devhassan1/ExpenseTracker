@@ -7,13 +7,16 @@ using System.Threading.Tasks;
 namespace ExpenseTracker.Application.DTOs
 {
 
+    public sealed record NewUserRequest(string Name, string? Email, string? Password);
+
     public sealed record AddExpenseRequest(
         long? CategoryId,
         decimal Amount,
         string? Description,
         DateTime TxnDate,
         long? ForUserId,     // optional: admin creating for user
-        long? TagId
+        long[]? TagIds,
+        NewUserRequest? NewUser
     );
 
     public record ExpenseFilterRequest(DateTime From, DateTime To, long? ForUserId)

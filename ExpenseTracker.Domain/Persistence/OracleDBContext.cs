@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using global::ExpenseTracker.Domain.Entities;
+using ExpenseTracker.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace ExpenseTracker.Infrastructure.Persistence
+namespace ExpenseTracker.Domain.Persistence
 {
 
     public class OracleDbContext : DbContext
@@ -48,6 +47,21 @@ namespace ExpenseTracker.Infrastructure.Persistence
 
             modelBuilder.Entity<Expense>().ToTable("EXPENSES");
 
+            // Map User entity to USERS table and explicit column names for Oracle
+            modelBuilder.Entity<User>(b =>
+            {
+                b.ToTable("USERS");
+
+                b.HasKey(u => u.Id);
+
+                b.Property(u => u.Id).HasColumnName("ID");
+                b.Property(u => u.Name).HasColumnName("NAME").IsRequired().HasMaxLength(200);
+                b.Property(u => u.Email).HasColumnName("EMAIL").HasMaxLength(200);
+                b.Property(u => u.PasswordHash).HasColumnName("PASSWORD_HASH").HasMaxLength(200);
+                b.Property(u => u.RoleId).HasColumnName("ROLE_ID");
+                b.Property(u => u.parent_user_id).HasColumnName("PARENT_USER_ID");
+            });
+
             // Expense money mapping (owned value object)
             modelBuilder.Entity<Expense>(b =>
             {
@@ -60,6 +74,11 @@ namespace ExpenseTracker.Infrastructure.Persistence
                 b.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
                 b.Property(e => e.UserId).HasColumnName("USER_ID");
                 b.Property(e => e.Id).HasColumnName("ID");
+            });
+            modelBuilder.Entity<Role>(b =>
+            {
+                b.Property(u => u.Id).HasColumnName("ID");
+                b.Property(u => u.Name).HasColumnName("NAME");
             });
         }
 

@@ -1,6 +1,4 @@
-﻿
-using ExpenseTracker.Application.DTOs;
-using ExpenseTracker.Application.UseCases.Expenses;
+﻿using ExpenseTracker.Application.DTOs;
 using ExpenseTracker.Application.UseCases.Reports;
 using ExpenseTracker.Common.Results;
 

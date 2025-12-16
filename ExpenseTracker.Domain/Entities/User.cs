@@ -13,7 +13,7 @@ namespace ExpenseTracker.Domain.Entities
         public string Name { get; set; } = default!;
         public string? Email { get; set; }
         public string PasswordHash { get; set; } = default!;
-        public long parent_user_id { get; set; }
+        public long? parent_user_id { get; set; }
 
     }
 

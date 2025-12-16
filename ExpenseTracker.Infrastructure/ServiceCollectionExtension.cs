@@ -1,31 +1,41 @@
-﻿using ExpenseTracker.Application.Interfaces;
+﻿using ExpenseTracker.Application.Interfaces.Common;
 using ExpenseTracker.Application.Interfaces.Repositories;
-using ExpenseTracker.Application.Interfaces.Services;
-using ExpenseTracker.Application.Services;
+using ExpenseTracker.Application.UseCases;
+using ExpenseTracker.Domain.Auth;
+using ExpenseTracker.Domain.Exports;
+using ExpenseTracker.Domain.Repositories;
 using ExpenseTracker.Infrastructure.Auth;
-using ExpenseTracker.Infrastructure.Exports;
 using ExpenseTracker.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ExpenseTracker.Infrastructure;
+namespace ExpenseTracker.Domain;
 
 public static class InfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
         // Repositories
-        services.AddScoped<IExpenseRepository, ExpenseRepository>();
-        services.AddScoped<ICategoryService, CategoryRepository>();
+        services.AddScoped<IExpenseService, ExpenseRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
 
         services.AddScoped<ITagRepository, TagRepository>();
         services.AddScoped<ITagService, TagService>();
-
+        services.AddScoped<IUserRepository, UserRepository>();
 
         // Cross-cutting
-        services.AddSingleton<IClock, SystemClock>();
+        services.AddScoped<IClock, SystemClock>();
         services.AddScoped<IExportService, CsvExportService>();
+
+        // Users
+        services.AddScoped<IUserRepository, UserRepository>();
+
+        // Unit of Work
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // Generic EF repository
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
         // User context
         services.AddHttpContextAccessor();

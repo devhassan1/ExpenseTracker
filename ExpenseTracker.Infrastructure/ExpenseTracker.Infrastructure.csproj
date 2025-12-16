@@ -19,12 +19,12 @@
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.2.0" />
     <PackageReference Include="Oracle.EntityFrameworkCore" Version="8.23.26000" />
     <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.26.0" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ExpenseTracker.Application\ExpenseTracker.Application.csproj" />
-    <ProjectReference Include="..\ExpenseTracker.Common\ExpenseTracker.Common.csproj" />
-    <ProjectReference Include="..\ExpenseTracker.Domain\ExpenseTracker.Domain.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ExpenseTracker.Application.Interfaces;
+using ExpenseTracker.Application.Interfaces.Repositories;
 using ExpenseTracker.Domain.Entities;
 
-namespace ExpenseTracker.Infrastructure.Exports;
+namespace ExpenseTracker.Domain.Exports;
 
 public sealed class CsvExportService : IExportService
 {

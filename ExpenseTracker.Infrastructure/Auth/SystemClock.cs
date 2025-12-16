@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ExpenseTracker.Application.Interfaces.Common;
 using global::ExpenseTracker.Application.Interfaces;
 
 
-namespace ExpenseTracker.Infrastructure.Auth
+namespace ExpenseTracker.Domain.Auth
 {
     public sealed class SystemClock : IClock
     {

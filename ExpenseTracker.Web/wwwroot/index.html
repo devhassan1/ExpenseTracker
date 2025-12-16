@@ -1,412 +1,123 @@
-﻿<!--<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Expense Tracker — Frontend</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="./styles.css">
+    <title>Expense Tracker — Login / Register</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="./styles.css" />
+
 </head>
+
 <body>
-    <header>
-        <h1>Expense Tracker</h1>
-        <nav>
-            <button data-tab="auth">Auth</button>
-            <button data-tab="add">Add Expense</button>
-            <button data-tab="list">List Expenses</button>
-            <button data-tab="export">Export</button>
-            <button data-tab="console">Console</button>
-        </nav>
-    </header>
+    <main style="max-width:420px;margin:60px auto;">
 
-    <main>-->
-<!-- AUTH TAB -->
-<!--<section id="tab-auth" class="tab active">
-    <h2>Login (JWT)</h2>
-    <form id="login-form">
-        <div class="grid">
-            <label>
-                Username
-                <input name="username" placeholder="alice" required />
-            </label>
-            <label>
-                Password
-                <input name="password" type="password" placeholder="alice_pwd" required />
-            </label>
-        </div>
-        <button type="submit">Login</button>
-    </form>
-
-    <div class="card">
-        <h3>Token</h3>
-        <pre id="token-preview">(not logged in)</pre>
-    </div>
-    <div class="card">
-        <h3>Decoded Claims</h3>
-        <pre id="claims-preview">(no claims)</pre>
-    </div>
-    <div class="card">
-        <button id="logout-btn" class="danger">Logout</button>
-    </div>
-</section>-->
-<!-- ADD EXPENSE TAB -->
-<!--<section id="tab-add" class="tab">
-    <h2>Add Expense</h2>
-
-    <details open>
-        <summary>Guided form (adjust fields to your DTO)</summary>
-        <form id="add-expense-form">
-            <div class="grid">
+        <!-- LOGIN PANEL -->
+        <section id="login-panel" class="panel">
+            <h2>Sign in</h2>
+            <form id="form-login">
                 <label>
-                    Date
-                    <input type="date" name="date" required />
+                    Username
+                    <input id="login-username" type="text" required />
                 </label>
                 <label>
-                    Amount
-                    <input type="number" step="0.01" name="amount" required />
+                    Password
+                    <input id="login-password" type="password" required />
                 </label>
-                <label>
-                    Currency
-                    <input name="currency" placeholder="PKR" />
-                </label>
-                <label>
-                    Category Id
-                    <input type="number" name="categoryId" />
-                </label>
-                <label>
-                    Tags (comma-separated)
-                    <input name="tagsCsv" placeholder="food,lunch" />
-                </label>
-                <label class="wide">
-                    Note
-                    <input name="note" placeholder="e.g. Team lunch at cafe" />
-                </label>
-                <label>
-                    For User Id (optional)
-                    <input type="number" name="forUserId" />
-                </label>
-            </div>
-            <button type="submit">Add</button>
-        </form>
-    </details>
+                <button type="submit">Sign in</button>
+                <div id="login-msg" class="muted"></div>
 
-    <details>
-        <summary>Raw JSON payload (exact DTO)</summary>
-        <textarea id="raw-add-json" rows="10" spellcheck="false"></textarea>
-        <div class="hint">If you know the exact <code>AddExpenseRequest</code> shape, paste JSON here and click “Send raw JSON”.</div>
-        <button id="send-raw-add">Send raw JSON</button>
-    </details>
-
-    <div class="card">
-        <h3>Response</h3>
-        <pre id="add-response"></pre>
-    </div>
-</section>-->
-<!-- LIST TAB -->
-<!--<section id="tab-list" class="tab">
-    <h2>List Expenses</h2>
-    <form id="list-expenses-form">
-        <div class="grid">
-            <label>
-                From
-                <input type="date" name="from" required />
-            </label>
-            <label>
-                To
-                <input type="date" name="to" required />
-            </label>
-            <label>
-                For User Id (optional)
-                <input type="number" name="forUserId" />
-            </label>
-        </div>
-        <button type="submit">List</button>
-    </form>
-
-    <div class="card">
-        <h3>Results</h3>
-        <table id="list-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Category</th>
-                    <th>Tags</th>
-                    <th>Note</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        <pre id="list-json"></pre>
-    </div>
-</section>-->
-<!-- EXPORT TAB -->
-<!--<section id="tab-export" class="tab">
-    <h2>Export Expenses</h2>
-    <form id="export-form">
-        <div class="grid">
-            <label>
-                From
-                <input type="date" name="from" required />
-            </label>
-            <label>
-                To
-                <input type="date" name="to" required />
-            </label>
-            <label>
-                For User Id (optional)
-                <input type="number" name="forUserId" />
-            </label>
-            <label>
-                Format
-                <select name="format" required>
-                    <option value="csv">CSV</option>
-                    <option value="excel">Excel (xlsx)</option>
-                    <option value="pdf">PDF</option>
-                </select>
-            </label>
-        </div>
-        <button type="submit">Export & Download</button>
-    </form>
-
-    <div class="card">
-        <h3>Status</h3>
-        <pre id="export-status"></pre>
-    </div>
-</section>-->
-<!-- CONSOLE TAB -->
-<!--<section id="tab-console" class="tab">
-            <h2>Console</h2>
-            <pre id="console-out"></pre>
+                <p style="margin-top:18px;" class="muted">
+                    Don’t have an account?
+                    <span id="goto-register" class="toggle-link">Create one</span>
+                </p>
+            </form>
         </section>
+
+        <!-- REGISTER PANEL -->
+        <section id="register-panel" class="panel hidden">
+            <h2>Create Account</h2>
+            <form id="form-register">
+                <label>
+                    Username
+                    <input id="reg-username" type="text" required />
+                </label>
+                <label>
+                    Password
+                    <input id="reg-password" type="password" required />
+                </label>
+                <button type="submit">Register</button>
+                <div id="register-msg" class="muted"></div>
+
+                <p style="margin-top:18px;" class="muted">
+                    Already have an account?
+                    <span id="goto-login" class="toggle-link">Sign in</span>
+                </p>
+            </form>
+        </section>
+
     </main>
 
-    <footer>
-        <small>All rights reserved.</small>
-    </footer>
+    <script src="app.js" defer></script>
 
-    <script src="app.js"></script>
-</body>
-</html>-->
+    <script>
+        (function () {
+            const byId = id => document.getElementById(id);
+            const show = id => byId(id).classList.remove('hidden');
+            const hide = id => byId(id).classList.add('hidden');
+            const setMsg = (id, text, err = false) => {
+                const el = byId(id); el.textContent = text; el.className = err ? 'error' : 'muted';
+            };
 
+            // toggle
+            byId('goto-register').onclick = () => {
+                hide('login-panel');
+                show('register-panel');
+            };
+            byId('goto-login').onclick = () => {
+                hide('register-panel');
+                show('login-panel');
+            };
 
+            // LOGIN
+            byId('form-login').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                setMsg('login-msg', 'Signing in...');
+                try {
+                    const username = byId('login-username').value.trim();
+                    const password = byId('login-password').value;
+                    const { token } = await authLogin({ username, password });
+                    localStorage.setItem('jwt', token);
+                    localStorage.setItem('currentUser', JSON.stringify(decodeJwt(token)));
+                    location.href = '/dashboard.html';
+                } catch (err) {
+                    setMsg('Password is incorrect!', err.message || String(err), true);
+                }
+            });
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <title>Expenses Admin</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-    <header>
-        <h1>Expenses Admin</h1>
-    </header>
+            // REGISTER
+            byId('form-register').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                setMsg('register-msg', 'Creating account...');
 
-    <main>
-        <!-- Organizations -->
-        <section class="panel">
-            <h2>New Organization</h2>
-            <form id="form-org">
-                <div class="row">
-                    <label>
-                        Organization Name
-                        <input type="text" id="org-name" maxlength="200" required placeholder="e.g., Acme Pakistan" />
-                    </label>
-                    <label>
-                        Parent Organization
-                        <select id="org-parent">
-                            <option value="">(none - root)</option>
-                        </select>
-                    </label>
-                </div>
-                <button type="submit">Create Organization</button>
-                <div id="org-msg" class="muted"></div>
-            </form>
-        </section>
+                try {
+                    const username = byId('reg-username').value.trim();
+                    const password = byId('reg-password').value;
 
-        <!-- Users -->
-        <section class="panel">
-            <h2>New User</h2>
-            <form id="form-user">
-                <div class="row">
-                    <label>
-                        Organization
-                        <select id="user-org" required></select>
-                    </label>
-                    <label>
-                        Role
-                        <select id="user-role" required></select>
-                    </label>
-                </div>
-                <div class="row">
-                    <label>
-                        Full Name
-                        <input type="text" id="user-name" maxlength="150" required />
-                    </label>
-                    <label>
-                        Email
-                        <input type="email" id="user-email" maxlength="200" />
-                    </label>
-                </div>
-                <div class="row">
-                    <label>
-                        Password (hash)
-                        <input type="text" id="user-passhash" maxlength="256" required placeholder="store hashed value" />
-                    </label>
-                    <label>
-                        Active
-                        <select id="user-active">
-                            <option value="1">Active</option>
-                            <option value="0">Inactive</option>
-                        </select>
-                    </label>
-                </div>
-                <button type="submit">Create User</button>
-                <div id="user-msg" class="muted"></div>
-            </form>
-        </section>
+                    const result = await authRegister({ username, password });
 
-        <!-- Categories -->
-        <section class="panel">
-            <h2>New Category</h2>
-            <form id="form-category">
-                <div class="row">
-                    <label>
-                        Organization (optional ⇒ Global if blank)
-                        <select id="cat-org">
-                            <option value="">(Global)</option>
-                        </select>
-                    </label>
-                    <label>
-                        Owner User (optional)
-                        <select id="cat-owner">
-                            <option value="">(None)</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="row">
-                    <label>
-                        Label
-                        <input type="text" id="cat-label" maxlength="120" required />
-                    </label>
-                    <label>
-                        Predefined?
-                        <select id="cat-predef">
-                            <option value="0">No</option>
-                            <option value="1">Yes</option>
-                        </select>
-                    </label>
-                </div>
-                <label>
-                    Active
-                    <select id="cat-active">
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                </label>
-                <button type="submit">Create Category</button>
-                <div id="cat-msg" class="muted"></div>
-            </form>
-        </section>
+                    setMsg('register-msg', 'Account created! You can now sign in.');
 
-        <!-- Tags -->
-        <section class="panel">
-            <h2>New Tag</h2>
-            <form id="form-tag">
-                <div class="row">
-                    <label>
-                        Organization (optional ⇒ Global if blank)
-                        <select id="tag-org">
-                            <option value="">(Global)</option>
-                        </select>
-                    </label>
-                    <label>
-                        Owner User (optional)
-                        <select id="tag-owner">
-                            <option value="">(None)</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="row">
-                    <label>
-                        Label
-                        <input type="text" id="tag-label" maxlength="120" required />
-                    </label>
-                    <label>
-                        Predefined?
-                        <select id="tag-predef">
-                            <option value="0">No</option>
-                            <option value="1">Yes</option>
-                        </select>
-                    </label>
-                </div>
-                <label>
-                    Active
-                    <select id="tag-active">
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                </label>
-                <button type="submit">Create Tag</button>
-                <div id="tag-msg" class="muted"></div>
-            </form>
-        </section>
+                    // Option A (simple): switch back to login
+                    hide('register-panel');
+                    show('login-panel');
 
-        <!-- Expenses -->
-        <section class="panel">
-            <h2>New Expense</h2>
-            <form id="form-expense">
-                <div class="grid-3">
-                    <label>
-                        Organization
-                        <select id="exp-org" required></select>
-                    </label>
-                    <label>
-                        Owner User
-                        <select id="exp-user" required></select>
-                    </label>
-                    <label>
-                        Created By (defaults to current user)
-                        <select id="exp-created-by" required></select>
-                    </label>
-                </div>
-                <div class="grid-3">
-                    <label>
-                        Category (optional)
-                        <select id="exp-category">
-                            <option value="">(None)</option>
-                        </select>
-                    </label>
-                    <label>
-                        Amount (PKR default)
-                        <input type="number" id="exp-amount" step="0.0001" min="0.0001" required />
-                    </label>
-                    <label>
-                        Currency
-                        <input type="text" id="exp-currency" maxlength="3" value="PKR" required />
-                    </label>
-                </div>
-                <label>
-                    Description
-                    <textarea id="exp-desc" maxlength="500" placeholder="Optional details..."></textarea>
-                </label>
-                <label>
-                    Transaction Date/Time
-                    <input type="datetime-local" id="exp-txn-date" required />
-                </label>
-                <label>
-                    Tags (multi-select)
-                    <select id="exp-tags" multiple size="6"></select>
-                </label>
-                <div class="chips" id="exp-auto-tags"></div>
-                <button type="submit">Create Expense</button>
-                <div id="exp-msg" class="muted"></div>
-            </form>
-        </section>
-    </main>
+                } catch (err) {
+                    setMsg('register-msg', err.message || String(err), true);
+                }
+            });
 
-    <script src="app.js">
+        })();
     </script>
+
 </body>
 </html>

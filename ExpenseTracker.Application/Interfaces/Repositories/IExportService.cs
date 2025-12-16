@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExpenseTracker.Application.Interfaces
+namespace ExpenseTracker.Application.Interfaces.Repositories
 {
     public interface IExportService
     {

@@ -1,5 +1,5 @@
 ﻿using ExpenseTracker.Application.DTOs;
-using ExpenseTracker.Application.Interfaces;
+using ExpenseTracker.Application.Interfaces.Repositories;
 using ExpenseTracker.Application.UseCases.Expenses;
 using ExpenseTracker.Common.Results;
 using System;
@@ -28,7 +28,7 @@ public sealed class ExportExpensesUseCase
 
         if (!listResult.IsSuccess) return Result<byte[]>.Fail(listResult.Error!);
 
-        var bytes = await _export.ExportExpensesAsync(listResult.Value!, req.Format.ToLowerInvariant(), ct);
+        var bytes = await _export.ExportExpensesAsync((IEnumerable<Domain.Entities.Expense>)listResult.Value!, req.Format.ToLowerInvariant(), ct);
         return Result<byte[]>.Success(bytes);
     }
 }

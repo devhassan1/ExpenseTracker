@@ -1,12 +1,14 @@
-﻿using ExpenseTracker.Domain.Entities;
+﻿
+// src/ExpenseTracker.Application/Interfaces/Repositories/ITagRepository.cs
+using ExpenseTracker.Domain.Entities;
 
-namespace ExpenseTracker.Application.UseCases;
+namespace ExpenseTracker.Application.Interfaces.Repositories;
 
-public interface ITagService
+public interface ITagRepository
 {
-    Task<List<Tag>> GetAll(CancellationToken ct);
     Task<Tag?> GetByLabel(string label, CancellationToken ct);
     Task<long> Create(Tag tag, CancellationToken ct);
     Task<List<Tag>> ListByCategory(long categoryId, CancellationToken ct);
     Task AssignToExpense(long expenseId, long tagId, CancellationToken ct);
+    Task<List<Tag>> ListAll(CancellationToken ct);
 }

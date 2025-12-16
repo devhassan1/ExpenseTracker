@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ExpenseTracker.Application.DTOs;
+using ExpenseTracker.Common.Results;
 
 namespace ExpenseTracker.Infrastructure.Auth;
 
 public interface IAuthService
 {
-    Task<(bool IsValid, long UserId, string[] Roles)> ValidateCredentialsAsync(
-        string username, string password, CancellationToken ct);
+    Task<LoginResponseModel> ValidateCredentialsAsync(string username, string password);
+    Task<Result<long>> RegisterAsync(RegisterRequest req, CancellationToken ct);
+    Task<string> CreateToken(int userId, string username, string? role = null);
 }
-

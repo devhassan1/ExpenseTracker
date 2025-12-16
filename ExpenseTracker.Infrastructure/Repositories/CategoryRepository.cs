@@ -1,38 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using global::ExpenseTracker.Application.Interfaces;
-using global::ExpenseTracker.Domain.Entities;
-using global::ExpenseTracker.Infrastructure.Persistence;
+﻿using ExpenseTracker.Application.Interfaces.Common;
+using ExpenseTracker.Application.Interfaces.Repositories;
+using ExpenseTracker.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Infrastructure.Repositories
 {
-    public sealed class CategoryRepository : ICategoryService
+    public sealed class CategoryRepository : ICategoryRepository
     {
-        private readonly OracleDbContext _db;
-        public CategoryRepository(OracleDbContext db) => _db = db;
+        private readonly IRepository<Category> _repo;
 
-        public async Task<Category?> GetByIdAsync(long id, CancellationToken ct)
-            => await _db.Categories.FindAsync(new object?[] { id }, ct);
+        public CategoryRepository(IRepository<Category> repo) => _repo = repo;
 
-        public async Task<Category?> GetByLabelAsync( string label, CancellationToken ct)
-            => await _db.Categories.AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Label == label, ct);
+        public Task<Category?> GetById(long id, CancellationToken ct)
+            => _repo.GetById(id, ct);
 
-        public async Task<long> CreateAsync(Category category, CancellationToken ct)
+        public async Task<Category?> GetByLabel(string label, CancellationToken ct)
+            => await _repo.Query().AsNoTracking().FirstOrDefaultAsync(c => c.Label == label, ct);
+
+        public async Task<long> Create(Category category, CancellationToken ct)
         {
-            await _db.Categories.AddAsync(category, ct);
-            await _db.SaveChangesAsync(ct);
+            await _repo.Add(category, ct);
+            // Save will be performed by IUnitOfWork
             return category.Id;
         }
 
-        public async Task<IReadOnlyList<Category>> ListAvailableAsync( long? ownerUserId, CancellationToken ct)
+        public async Task<IReadOnlyList<Category>> ListAvailable(long? ownerUserId, CancellationToken ct)
         {
-            var q = _db.Categories.AsQueryable();
-            return await q.AsNoTracking().ToListAsync(ct);
+            var q = _repo.Query().AsNoTracking();
+            return await q.ToListAsync(ct);
         }
     }
 

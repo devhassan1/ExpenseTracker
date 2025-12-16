@@ -1,6 +1,6 @@
 ﻿
 // src/ExpenseTracker.Web/Controllers/TagsController.cs
-using ExpenseTracker.Application.Interfaces.Services;
+using ExpenseTracker.Application.UseCases;
 using ExpenseTracker.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,17 +16,17 @@ public class TagsController : ControllerBase
 
     // GET api/tags?label=&includeGlobal=true
     [HttpGet]
-    public async Task<ActionResult<List<Tag>>> GetAsync([FromQuery] string? label, [FromQuery] bool includeGlobal = true, CancellationToken ct = default)
+    public async Task<ActionResult<List<Tag>>> Get([FromQuery] string? label, [FromQuery] bool includeGlobal = true, CancellationToken ct = default)
     {
         try
         {
             if (!string.IsNullOrWhiteSpace(label))
             {
-                var tag = await _service.GetByLabelAsync(label, ct);
+                var tag = await _service.GetByLabel(label, ct);
                 return Ok(tag is null ? new List<Tag>() : new List<Tag> { tag });
             }
 
-            var list = await _service.GetAllAsync(ct);
+            var list = await _service.GetAll(ct);
             return Ok(list.ToList());
         }
         catch (Exception ex)
@@ -37,11 +37,11 @@ public class TagsController : ControllerBase
 
     // POST api/tags
     [HttpPost]
-    public async Task<ActionResult<long>> CreateAsync([FromBody] Tag tag, CancellationToken ct)
+    public async Task<ActionResult<long>> Create([FromBody] Tag tag, CancellationToken ct)
     {
         try
         {
-            var id = await _service.CreateAsync(tag, ct);
+            var id = await _service.Create(tag, ct);
             return Ok(id);
         }
         catch (Exception ex)

@@ -1,29 +1,34 @@
-﻿
-// src/ExpenseTracker.Infrastructure/Repositories/TagRepository.cs
-using ExpenseTracker.Application.Interfaces.Repositories;
+﻿using ExpenseTracker.Application.Interfaces.Repositories;
 using ExpenseTracker.Domain.Entities;
-using ExpenseTracker.Infrastructure.Persistence;
+using ExpenseTracker.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
+
+using ExpenseTracker.Application.Interfaces.Common;
 
 namespace ExpenseTracker.Infrastructure.Repositories;
 
 public sealed class TagRepository : ITagRepository
 {
+    private readonly IRepository<Tag> _repo;
     private readonly OracleDbContext _db;
 
-    public TagRepository(OracleDbContext db) => _db = db;
-
-    public Task<Tag?> GetByLabelAsync(string label, CancellationToken ct)
-        => _db.Tags.AsNoTracking().FirstOrDefaultAsync(t => t.Label == label, ct);
-
-    public async Task<long> CreateAsync(Tag tag, CancellationToken ct)
+    public TagRepository(IRepository<Tag> repo, OracleDbContext db)
     {
-        await _db.Tags.AddAsync(tag, ct);
-        await _db.SaveChangesAsync(ct);
+        _repo = repo;
+        _db = db;
+    }
+
+    public Task<Tag?> GetByLabel(string label, CancellationToken ct)
+        => _repo.GetById(0, ct); // placeholder: domain-specific lookup remains using Query in implementations
+
+    public async Task<long> Create(Tag tag, CancellationToken ct)
+    {
+        await _repo.Add(tag, ct);
+        // UnitOfWork SaveChanges will be called by caller
         return tag.Id;
     }
 
-    public async Task<List<Tag>> ListByCategoryAsync(long categoryId, CancellationToken ct)
+    public async Task<List<Tag>> ListByCategory(long categoryId, CancellationToken ct)
     {
         // Adjust table/column names if different in your Oracle schema
         var tagIds = await _db.Database
@@ -36,11 +41,11 @@ public sealed class TagRepository : ITagRepository
             .ToListAsync(ct);
     }
 
-    public Task AssignToExpenseAsync(long expenseId, long tagId, CancellationToken ct)
+    public Task AssignToExpense(long expenseId, long tagId, CancellationToken ct)
         => _db.Database.ExecuteSqlInterpolatedAsync(
             $"INSERT INTO EXPENSE_TAG (EXPENSE_ID, TAG_ID) VALUES ({expenseId}, {tagId})", ct);
 
-    public async Task<List<Tag>> ListAllAsync(CancellationToken ct)
+    public async Task<List<Tag>> ListAll(CancellationToken ct)
     {
         return await _db.Tags
             .AsNoTracking()

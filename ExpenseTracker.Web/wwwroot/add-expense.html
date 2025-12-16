@@ -5,29 +5,17 @@
     <meta charset="utf-8" />
     <title>Add Expense</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="stylesheet" href="styles.css"/>
-</head>
+    <link rel="stylesheet" href="styles.css" />
+    </head>
 <body>
-    <header style="display:flex;align-items:center;">
-        <h1>Add Expense</h1>
-        <div style="margin-left:auto;padding-right:18px;">
-            <button id="btn-back" class="secondary">Back</button>
-            <button id="btn-logout" class="secondary">Sign out</button>
-        </div>
-    </header>
-
     <main>
         <section class="panel">
             <h2>New Expense</h2>
             <form id="form-expense">
+
+                <!-- Owner/User (referenced by script) -->
+      
                 <div class="grid-3">
-
-                    <label id="label-owner">
-                        Owner User
-                        <select id="exp-user" name="user" class="form-select"></select>
-                        <small id="users-msg" class="muted"></small>
-                    </label>
-
                     <label>
                         Amount (PKR default)
                         <input type="number" id="exp-amount" step="0.0001" min="0.0001" required />
@@ -56,11 +44,13 @@
             </form>
         </section>
     </main>
-    <script src="/app.js"></script>
+
+    <!-- If you still need other logic from app.js, load it AFTER the page code or ensure window.loadTags is defined there -->
+    <!-- /app.js</script> -->
     <!-- Page script -->
-    <script defer>
+    <script>
         (function () {
-            // Local aliases to avoid accidental shadowing
+            // ---------- Helpers ----------
             const $ = (id) => document.getElementById(id);
             const msg = (id, text, err = false) => {
                 const el = $(id);
@@ -69,103 +59,193 @@
                 el.className = err ? 'error' : 'muted';
             };
 
-            // Back/Logout actions
-            document.addEventListener('DOMContentLoaded', () => {
+            const authHeaders = () => {
+                const token = localStorage.getItem('jwt');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                return headers;
+            };
+
+            async function getJSON(url) {
+                const res = await fetch(url, { headers: authHeaders() });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(text || `GET ${url} failed (${res.status})`);
+                }
+                return res.json();
+            }
+
+            async function postJSON(url, body) {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(text || `POST ${url} failed (${res.status})`);
+                }
+                return res.json().catch(() => ({})); // some endpoints may return empty
+            }
+
+            // ---------- FIXED loadTags ----------
+            async function loadTags(selectId = 'exp-tags', opts = { includeGlobal: true }) {
+                const select = document.getElementById(selectId);
+                if (!select) {
+                    console.warn(`loadTags: element #${selectId} not found; skipping render.`);
+                    return [];
+                }
+
+                const q = new URLSearchParams();
+                if (opts?.label) q.append('label', opts.label);
+                if (opts?.includeGlobal !== undefined) q.append('includeGlobal', String(opts.includeGlobal));
+
+                let tags = [];
+                try {
+                    const url = `/api/tags?${q.toString()}`;
+                    tags = await getJSON(url);
+                } catch (err) {
+                    console.error('loadTags failed:', err);
+                    msg('tags-msg', 'Could not load tags', true);
+                }
+
+                // Render options
+                select.innerHTML = '';
+                (Array.isArray(tags) ? tags : []).forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = String(t.id ?? '');
+                    opt.textContent = String(t.label ?? '');
+                    select.appendChild(opt);
+                });
+
+                return tags;
+            }
+
+            // ---------- Optional: loadUsers for SuperAdmin ----------
+            async function loadUsers(parentId = null, selectId = 'exp-user') {
+                const sel = document.getElementById(selectId);
+                if (!sel) {
+                    console.warn(`loadUsers: element #${selectId} not found; skipping render.`);
+                    return [];
+                }
+                const q = new URLSearchParams();
+                if (parentId !== null && parentId !== undefined) q.append('parent', String(parentId));
+                let users = [];
+                try {
+                    const url = `/api/users?${q.toString()}`;
+                    users = await getJSON(url);
+                } catch (err) {
+                    console.error('loadUsers failed:', err);
+                    msg('exp-msg', 'Could not load users', true);
+                }
+                sel.innerHTML = '';
+                (Array.isArray(users) ? users : []).forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = String(u.id ?? '');
+                    opt.textContent = String(u.name ?? '');
+                    sel.appendChild(opt);
+                });
+                return users;
+            }
+
+            // ---------- Auth checks & header actions ----------
+            document.addEventListener('DOMContentLoaded', async () => {
+                // Back/Logout
                 $('btn-back')?.addEventListener('click', () => history.back());
                 $('btn-logout')?.addEventListener('click', () => {
                     localStorage.removeItem('jwt');
                     localStorage.removeItem('currentUser');
                     location.href = '/login.html';
                 });
-            });
 
-            // Require token; redirect if missing
-            const token = localStorage.getItem('jwt');
-            if (!token) {
-                location.href = '/login.html';
-                return;
-            }
+                // Require token; redirect if missing
+                const token = localStorage.getItem('jwt');
+                if (!token) {
+                    location.href = '/login.html';
+                    return;
+                }
 
-            const info = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            const roles = Array.isArray(info?.roles) ? info.roles : [];
-            const isSuper = roles.includes('SuperAdmin');
-
-            if (!isSuper) {
-                const ownerLabel = $('label-owner');
-                if (ownerLabel) ownerLabel.style.display = 'none';
-            }
-
-            // Init on DOM ready
-            document.addEventListener('DOMContentLoaded', async () => {
+                // Decode user info (optional)
+                let info = {};
                 try {
-                    // Tags (multi)
-                    await loadTags('exp-tags', { includeGlobal: true });
+                    info = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                } catch { info = {}; }
 
-                    // Users
-                    if (isSuper) {
-                        await loadUsers(null, 'exp-user');
-                    } else {
-                        const sel = $('exp-user');
-                        if (sel) {
-                            const opt = document.createElement('option');
-                            opt.value = info.userId;
-                            opt.textContent = info.username ?? `User ${info.userId}`;
-                            sel.appendChild(opt);
-                        }
+                const roles = Array.isArray(info?.roles) ? info.roles : [];
+                const isSuper = roles.includes('SuperAdmin');
+
+                if (!isSuper) {
+                    const ownerLabel = $('label-owner');
+                    if (ownerLabel) ownerLabel.style.display = 'none';
+                }
+
+                // Init tags
+                await loadTags('exp-tags', { includeGlobal: true });
+
+                // Init users
+                if (isSuper) {
+                    await loadUsers(null, 'exp-user');
+                } else {
+                    const sel = $('exp-user');
+                    if (sel) {
+                        const opt = document.createElement('option');
+                        opt.value = String(info.userId ?? '');
+                        opt.textContent = info.username ? String(info.username) : `User ${info.userId ?? ''}`;
+                        sel.appendChild(opt);
                     }
-
-                    // Transaction date = now (local)
-                    const now = new Date();
-                    const pad = (n) => String(n).padStart(2, '0');
-                    const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-                    const txnInput = $('exp-txn-date');
-                    if (txnInput) txnInput.value = local;
-
-                } catch (err) {
-                    msg('exp-msg', err.message || String(err), true);
                 }
-            });
 
-            // Submit handler (sends tagIds: array)
-            $('form-expense')?.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                try {
-                    const userId = Number($('exp-user').value);
-                    const amount = Number($('exp-amount').value);
-                    const description = ($('exp-desc').value || '').trim() || null;
+                // Set transaction date to now (local)
+                const now = new Date();
+                const pad = (n) => String(n).padStart(2, '0');
+                const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                const txnInput = $('exp-txn-date');
+                if (txnInput) txnInput.value = local;
 
-                    const txnLocal = $('exp-txn-date').value;
-                    if (!txnLocal) throw new Error('Transaction date is required');
+                // Submit handler (send TagIds as array)
+                $('form-expense')?.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    try {
+                        const userSelect = $('exp-user');
+                        const userId = Number(userSelect?.value ?? NaN);
 
-                    const txnDate = new Date(txnLocal);
-                    if (isNaN(txnDate)) throw new Error('Invalid transaction date');
+                        const amount = Number($('exp-amount')?.value ?? NaN);
+                        if (!Number.isFinite(amount) || amount <= 0) throw new Error('Amount must be greater than 0.');
 
-                    const tagSel = $('exp-tags');
-                    const tagIds = Array.from(tagSel?.selectedOptions ?? []).map(o => Number(o.value));
+                        const description = ($('exp-desc')?.value || '').trim() || null;
 
-                    const payload = {
-                        userId,
-                        createdByUserId: Number(info.userId),
-                        amount,
-                        description,
-                        txnDate: txnDate.toISOString(),
-                        tagIds
-                    };
+                        const txnLocal = $('exp-txn-date')?.value;
+                        if (!txnLocal) throw new Error('Transaction date is required');
 
-                    await postJSON('/api/expenses', payload);
-                    msg('exp-msg', 'Expense created.');
-                    $('form-expense').reset();
+                        const txnDate = new Date(txnLocal);
+                        if (isNaN(txnDate)) throw new Error('Invalid transaction date');
 
-                    // Re-init date after reset
-                    const now = new Date();
-                    const pad = (n) => String(n).padStart(2, '0');
-                    const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-                    $('exp-txn-date').value = local;
-                } catch (err) {
-                    msg('exp-msg', err.message || String(err), true);
-                }
+                        const tagSel = $('exp-tags');
+                        const tagIds = Array.from(tagSel?.selectedOptions ?? []).map(o => Number(o.value));
+
+                        const payload = {
+                            ForUserId: Number.isFinite(userId) ? userId : null,
+                            createdByUserId: Number(info.userId),
+                            amount,
+                            description,
+                            txnDate: txnDate.toISOString(),
+                            TagIds: tagIds
+                        };
+
+                        await postJSON('/api/expenses', payload);
+                        msg('exp-msg', 'Expense created.');
+                        $('form-expense').reset();
+
+                        // Re-init date after reset
+                        const n2 = new Date();
+                        const local2 = `${n2.getFullYear()}-${pad(n2.getMonth() + 1)}-${pad(n2.getDate())}T${pad(n2.getHours())}:${pad(n2.getMinutes())}`;
+                        $('exp-txn-date').value = local2;
+                    } catch (err) {
+                        msg('exp-msg', err.message || String(err), true);
+                    }
+                });
             });
         })();
     </script>
-</body>
+    </body>
 </html>

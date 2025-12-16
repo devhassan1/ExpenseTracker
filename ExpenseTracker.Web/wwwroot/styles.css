@@ -1,22 +1,26 @@
 ﻿
-:root {
-    --bg: #0f172a;
-    --panel: #111827;
-    --text: #e5e7eb;
-    --muted: #9ca3af;
-    --accent: #22c55e;
-    --accent-600: #16a34a;
-    --accent-700: #15803d;
-    --danger: #ef4444;
-    --danger-700: #b91c1c;
-    --warning: #f59e0b;
-    --border: #1f2937;
-    --input-bg: #0b1220;
-    --input-border: #1f2937;
-    --input-focus: rgba(34, 197, 94, .35);
-    --shadow: rgba(0, 0, 0, .35);
-}
 
+:root {
+    /* Base */
+    --bg: #f7fafc; /* very light cool gray */
+    --panel: #ffffff; /* white cards/panels */
+    --text: #0f172a; /* slate-900 */
+    --muted: #64748b; /* slate-500 */
+    /* Accents – mint/emerald */
+    --accent: #10b981; /* emerald-500 (vibrant) */
+    --accent-600: #059669; /* emerald-600 */
+    --accent-700: #047857; /* emerald-700 */
+    /* Semantic */
+    --danger: #ef4444; /* red-500 */
+    --danger-700: #b91c1c; /* red-700 */
+    --warning: #f59e0b; /* amber-500 */
+    /* UI chrome */
+    --border: #e5e7eb; /* neutral border for light UI */
+    --input-bg: #ffffff; /* inputs on light */
+    --input-border: #d1d5db; /* gray-300 */
+    --input-focus: rgba(16, 185, 129, 0.35); /* emerald glow */
+    --shadow: rgba(15, 23, 42, 0.08); /*  --shadow: rgba(15, 23, 42, 0.08);         /* subtle slate shadow */
+}
 html, body {
     background: var(--bg);
     color: var(--text);
@@ -28,7 +32,7 @@ html, body {
 
 header {
     padding: 16px 24px;
-    background: #0b1220;
+    background: #f7fafc;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;

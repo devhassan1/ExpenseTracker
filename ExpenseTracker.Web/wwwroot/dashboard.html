@@ -68,7 +68,6 @@
                             <th style="padding:8px;border-bottom:1px solid #222">ID</th>
                             <th style="padding:8px;border-bottom:1px solid #222">Name</th>
                             <th style="padding:8px;border-bottom:1px solid #222">Email</th>
-                            <th style="padding:8px;border-bottom:1px solid #222">Role</th>
                         </tr>
                     </thead>
                     <tbody id="users-body"></tbody>
@@ -77,124 +76,156 @@
         </main>
 
         <script src="app.js"></script>
+
         <script>
-    (function () {
-      const byId = id => document.getElementById(id);
-      const setMsg = (id, text, err=false) => { const el=byId(id); el.textContent=text; el.className = err?'error':'muted'; };
+            (function () {
+                const byId = id => document.getElementById(id);
+                const setMsg = (id, text, err = false) => { const el = byId(id); if (!el) return; el.textContent = text; el.className = err ? 'error' : 'muted'; };
 
-      // redirect if not logged in
-      const token = localStorage.getItem('jwt');
-      if (!token) location.href = '/login.html';
-      const info = JSON.parse(localStorage.getItem('currentUser') || '{}');
-      const isSuper = (info?.roles || []).includes('SuperAdmin');
+                // redirect if not logged in
+                const token = localStorage.getItem('jwt');
+                if (!token) location.href = '/login.html';
 
-      // wire buttons
-      byId('btn-logout').addEventListener('click', () => { localStorage.removeItem('jwt'); localStorage.removeItem('currentUser'); location.href='/login.html'; });
-      byId('btn-add').addEventListener('click', () => location.href = '/add-expense.html');
+                // parse current user
+                const info = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
-      // show superadmin panel if role
-      if (isSuper) {
-        document.getElementById('superadmin-panel').style.display = 'block';
-        loadAllUsers();
-      }
+                // --- PASTE THIS BLOCK RIGHT HERE ---
+                // read role from typical claim keys or a 'role' shortcut
+                const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
+                const rawRole =
+                    info?.[ROLE_CLAIM] ??
+                    info?.role ??
+                    info?.roles ?? // in case you later store roles as array
+                    null;
 
-      // load own expenses (or all for superadmin)
-      loadExpenses();
+                // normalize to an array of strings
+                const rolesArr = Array.isArray(rawRole)
+                    ? rawRole
+                    : String(rawRole || '')
+                        .split(/[,\s]+/)         // support "User,SuperAdmin" or "User SuperAdmin"
+                        .filter(Boolean);
 
-      byId('btn-export').addEventListener('click', async () => {
-        try {
-          const from = byId('filter-from').value;
-          const to = byId('filter-to').value;
-          const fmt = byId('export-format').value;
-          setMsg('list-msg', 'Preparing report...');
-          // if superadmin allowed to download all, don't pass forUserId; otherwise pass current user
-          const forUserId = isSuper ? null : info.userId;
-          await exportReport({ from, to, forUserId, format: fmt });
-          setMsg('list-msg', 'Report downloaded.');
-        } catch (err) {
-          setMsg('list-msg', err.message || String(err), true);
-        }
-      });
+                const rolesNorm = rolesArr.map(r => r.toLowerCase().trim());
 
-      async function loadExpenses() {
-        try {
-          setMsg('list-msg', 'Loading expenses...');
-          // backend List endpoint expects from & to and optional forUserId. We'll default to last 30 days
-          const to = new Date();
-          const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
-          const qFrom = toIsoDate(from);
-          const qTo = toIsoDate(to);
-          const forUserId = isSuper ? null : info.userId;
-          const url = `/api/expenses?from=${encodeURIComponent(qFrom)}&to=${encodeURIComponent(qTo)}${forUserId ? `&forUserId=${forUserId}` : ''}`;
-          const list = await getJSON(url);
-          renderExpenses(list);
-          setMsg('list-msg', 'Loaded ' + (list?.length ?? 0) + ' items.');
-        } catch (err) {
-          setMsg('list-msg', err.message || String(err), true);
-        }
-      }
+                // decide super-admin
+                const isSuper = rolesNorm.some(r => r === 'superadmin' || r === 'super' || r === 'super admin');
 
-      function renderExpenses(items) {
-        const body = byId('expenses-body');
-        body.innerHTML = '';
-        if (!items || items.length === 0) {
-          const tr = document.createElement('tr');
-          tr.innerHTML = '<td colspan="6" style="padding:12px">No expenses</td>';
-          body.appendChild(tr);
-          return;
-        }
-        for (const e of items) {
-          const tr = document.createElement('tr');
-          const tags = (e.tags || []).map(t => t.label || t).join(', ');
-          tr.innerHTML = `
-            <td style="padding:8px;border-bottom:1px solid #222">${formatDate(e.txnDate)}</td>
-            <td style="padding:8px;border-bottom:1px solid #222">${e.amount}</td>
-            <td style="padding:8px;border-bottom:1px solid #222">${e.currency}</td>
-            <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(e.description || '')}</td>
-            <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(tags)}</td>
-            <td style="padding:8px;border-bottom:1px solid #222">${e.userName ?? e.userId}</td>
-          `;
-          body.appendChild(tr);
-        }
-      }
+                console.log('[dashboard] roles (normalized):', rolesNorm, 'isSuper:', isSuper);
+                // --- END OF PASTED BLOCK ---
 
-      async function loadAllUsers() {
-        try {
-          setMsg('sa-msg', 'Loading users...');
-          const users = await getJSON('/api/users');
-          const body = byId('users-body');
-          body.innerHTML = '';
-          for (const u of users) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td style="padding:8px;border-bottom:1px solid #222">${u.id}</td>
-              <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(u.name)}</td>
-              <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(u.email || '')}</td>
-              <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(u.roleName || '')}</td>
-            `;
-            body.appendChild(tr);
-          }
-          setMsg('sa-msg', 'Loaded ' + users.length + ' users.');
-        } catch (err) {
-          setMsg('sa-msg', err.message || String(err), true);
-        }
-      }
+                // wire buttons
+                byId('btn-logout')?.addEventListener('click', () => { localStorage.removeItem('jwt'); localStorage.removeItem('currentUser'); location.href = '/login.html'; });
+                byId('btn-add')?.addEventListener('click', () => location.href = '/add-expense.html');
 
-      // helpers (available in app.js but safe to repeat)
-      function toIsoDate(d) {
-        // produce yyyy-MM-dd (the backend will parse into DateTime if needed)
-        const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
-        return `${y}-${m}-${day}`;
-      }
-      function formatDate(s) {
-        if (!s) return '';
-        const d = new Date(s);
-        return d.toLocaleString();
-      }
-      function escapeHtml(s) {
-        return s.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]);
-      }
-    })();
+          
+                    loadAllUsers();
+
+                // load own expenses (or all for superadmin)
+                loadExpenses();
+
+                byId('btn-export')?.addEventListener('click', async () => {
+                    try {
+                        const from = byId('filter-from')?.value;
+                        const to = byId('filter-to')?.value;
+                        const fmt = byId('export-format')?.value || 'csv';
+                        setMsg('list-msg', 'Preparing report...');
+                        // if superadmin allowed to download all, don't pass forUserId; otherwise pass current user
+                        const forUserId = isSuper ? null : info.userId;
+                        await exportReport({ from, to, forUserId, format: fmt });
+                        setMsg('list-msg', 'Report downloaded.');
+                    } catch (err) {
+                        setMsg('list-msg', err.message || String(err), true);
+                    }
+                });
+
+                async function loadExpenses() {
+                    try {
+                        setMsg('list-msg', 'Loading expenses...');
+                        // backend List endpoint expects from & to and optional forUserId. We'll default to last 30 days
+                        const to = new Date();
+                        const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
+                        const qFrom = toIsoDate(from);
+                        const qTo = toIsoDate(to);
+                        const forUserId = isSuper ? null : info.userId;
+                        const url = `/api/expenses?from=${encodeURIComponent(qFrom)}&to=${encodeURIComponent(qTo)}${forUserId ? `&forUserId=${forUserId}` : ''}`;
+                        const list = await getJSON(url);
+                        renderExpenses(list);
+                        setMsg('list-msg', 'Loaded ' + (list?.length ?? 0) + ' items.');
+                    } catch (err) {
+                        setMsg('list-msg', err.message || String(err), true);
+                    }
+                }
+
+                function renderExpenses(items) {
+                    const body = byId('expenses-body');
+                    if (!body) return;
+                    body.innerHTML = '';
+                    if (!items || items.length === 0) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = '<td colspan="6" style="padding:12px">No expenses</td>';
+                        body.appendChild(tr);
+                        return;
+                    }
+                    for (const e of items) {
+                        const tr = document.createElement('tr');
+                        const tags = (e.tags || []).map(t => t.label || t).join(', ');
+                        tr.innerHTML = `
+                <td style="padding:8px;border-bottom:1px solid #222">${formatDate(e.txnDate)}</td>
+                <td style="padding:8px;border-bottom:1px solid #222">${e.amount}</td>
+                <td style="padding:8px;border-bottom:1px solid #222">${e.currency}</td>
+                <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(e.description || '')}</td>
+                <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(tags)}</td>
+                <td style="padding:8px;border-bottom:1px solid #222">${e.userName ?? e.userId ?? ''}</td>
+              `;
+                        body.appendChild(tr);
+                    }
+                }
+
+                async function loadAllUsers() {
+                    try {
+                        setMsg('sa-msg', 'Loading users...');
+                        const users = await getJSON('/api/users/loadAllUsers');
+                        const body = byId('users-body');
+                        if (!body) return;
+                        body.innerHTML = '';
+                        const arr = Array.isArray(users) ? users : [];
+                        if (arr.length === 0) {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = '<td colspan="3" style="padding:12px">No users</td>';
+                            body.appendChild(tr);
+                            setMsg('sa-msg', 'No users found.');
+                            return;
+                        }
+                        for (const u of arr) {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                  <td style="padding:8px;border-bottom:1px solid #222">${u.id}</td>
+                  <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(u.name)}</td>
+                  <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(u.email || '')}</td>
+                `;
+                            body.appendChild(tr);
+                        }
+                        setMsg('sa-msg', 'Loaded ' + arr.length + ' users.');
+                    } catch (err) {
+                        setMsg('sa-msg', err.message || String(err), true);
+                    }
+                }
+
+                // helpers (available in app.js but safe to repeat)
+                function toIsoDate(d) {
+                    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${day}`;
+                }
+                function formatDate(s) {
+                    if (!s) return '';
+                    const d = new Date(s);
+                    return d.toLocaleString();
+                }
+                function escapeHtml(s) {
+                    return String(s).replace(/[&<>\"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+                }
+            })();
         </script>
+
     </body>
 </html>

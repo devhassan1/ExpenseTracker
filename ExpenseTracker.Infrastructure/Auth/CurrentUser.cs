@@ -23,10 +23,10 @@
 //        }
 //    }
 //}
-using ExpenseTracker.Application.Interfaces;
+using ExpenseTracker.Application.Interfaces.Common;
 using System.Security.Claims;
 
-namespace ExpenseTracker.Infrastructure.Auth;
+namespace ExpenseTracker.Domain.Auth;
 
 public sealed class CurrentUser : ICurrentUser
 {
@@ -38,7 +38,13 @@ public sealed class CurrentUser : ICurrentUser
 
     public CurrentUser(ClaimsPrincipal user)
     {
-        UserId = long.TryParse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+        // Try a number of common claim types that may contain the user id
+        string? idStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? user.FindFirst("sub")?.Value
+                        ?? user.FindFirst("nameid")?.Value
+                        ?? user.FindFirst("id")?.Value;
+
+        UserId = long.TryParse(idStr, out var id) ? id : 0;
 
         Roles = user.FindAll(ClaimTypes.Role).Select(x => x.Value).ToArray();
     }
