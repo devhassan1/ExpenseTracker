@@ -10,7 +10,6 @@ namespace ExpenseTracker.Application.DTOs
     public sealed record NewUserRequest(string Name, string? Email, string? Password);
 
     public sealed record AddExpenseRequest(
-        long? CategoryId,
         decimal Amount,
         string? Description,
         DateTime TxnDate,

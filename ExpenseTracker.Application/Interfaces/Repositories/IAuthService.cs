@@ -14,7 +14,7 @@ namespace ExpenseTracker.Application.Interfaces.Repositories
             string username, string password, CancellationToken ct);
 
         // Optional: let Auth orchestrate registration via repository abstraction.
-        Task<Result<long>> RegisterAsync(RegisterRequest req, CancellationToken ct);
+        Task<Result<long>> RegisterUser(RegisterRequest req, CancellationToken ct);
         Task<Result<string>> CreateToken(string userId, string username, IEnumerable<string>? roles = null);
     }
 

@@ -1,5 +1,4 @@
-﻿
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -12,30 +11,28 @@
         <section class="panel">
             <h2>New Expense</h2>
             <form id="form-expense">
+ Owner/User (referenced by script) 
+<div class="grid-3">
+    <label>
+        Amount (PKR default)
+        <input type="number" id="exp-amount" step="0.0001" min="0.0001" required />
+    </label>
+</div>
 
-                <!-- Owner/User (referenced by script) -->
-      
-                <div class="grid-3">
-                    <label>
-                        Amount (PKR default)
-                        <input type="number" id="exp-amount" step="0.0001" min="0.0001" required />
-                    </label>
-                </div>
+<label>
+    Description
+    <textarea id="exp-desc" maxlength="500" placeholder="Optional details..."></textarea>
+</label>
 
-                <label>
-                    Description
-                    <textarea id="exp-desc" maxlength="500" placeholder="Optional details..."></textarea>
-                </label>
+<label>
+    Transaction Date/Time
+    <input type="datetime-local" id="exp-txn-date" required />
+</label>
 
-                <label>
-                    Transaction Date/Time
-                    <input type="datetime-local" id="exp-txn-date" required />
-                </label>
-
-                <label>
-                    Tags (choose one or more)
-                    <!-- MULTI-SELECT (dynamic; options populated by loadTags) -->
-                    <select id="exp-tags" name="TagIds" required multiple class="form-select"></select>
+<label>
+    Tags (choose one or more)
+ MULTI-SELECT (dynamic; options populated by loadTags) 
+<select id="exp-tags" name="TagIds" required multiple class="form-select"></select>
                     <small id="tags-msg" class="muted"></small>
                 </label>
 
@@ -45,9 +42,6 @@
         </section>
     </main>
 
-    <!-- If you still need other logic from app.js, load it AFTER the page code or ensure window.loadTags is defined there -->
-    <!-- /app.js</script> -->
-    <!-- Page script -->
     <script>
         (function () {
             // ---------- Helpers ----------

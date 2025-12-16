@@ -6,6 +6,6 @@ namespace ExpenseTracker.Infrastructure.Auth;
 public interface IAuthService
 {
     Task<LoginResponseModel> ValidateCredentialsAsync(string username, string password);
-    Task<Result<long>> RegisterAsync(RegisterRequest req, CancellationToken ct);
+    Task<Result<long>> RegisterUser(RegisterRequest req, CancellationToken ct);
     Task<string> CreateToken(int userId, string username, string? role = null);
 }

@@ -30,16 +30,24 @@ namespace ExpenseTracker.Infrastructure.Auth
         public async Task<LoginResponseModel> ValidateCredentialsAsync(
             string username, string password)
         {
-            LoginResponseModel loginResponseModel = new LoginResponseModel() { IsValid = false};
-            var users = await _repo.GetByName(username);
-            if (users != null || users.PasswordHash == password)
-            {
+            var response = new LoginResponseModel { IsValid = false };
 
-                loginResponseModel.Role = await _repo.GetRoleByID(users.RoleId);
-                loginResponseModel.UserID = (int)users.Id;
-                loginResponseModel.IsValid = true;
-            }
-            return loginResponseModel;
+            var user = await _repo.GetByName(username);
+
+            // 1. User not found
+            if (user == null)
+                return response;
+
+            // 2. Password mismatch (TEMP – replace with hash check later)
+            if (user.PasswordHash != password)
+                return (response);
+
+            // 3. Valid login
+            response.UserID = (int)user.Id;
+            response.Role = await _repo.GetRoleByID(user.RoleId);
+            response.IsValid = true;
+
+            return response;
         }
 
 
@@ -82,8 +90,8 @@ namespace ExpenseTracker.Infrastructure.Auth
 
 
         // Delegate registration to repository (no _db here)
-        public Task<Result<long>> RegisterAsync(RegisterRequest req, CancellationToken ct)
-            => _repo.RegisterAsync(req, ct);
+        public Task<Result<long>> RegisterUser(RegisterRequest req, CancellationToken ct)
+            => _repo.RegisterUser(req, ct);
 
         private sealed record Entry(string Password, long UserId, string[] Roles);
         private sealed record UserConfig(string Username, string Password, long UserId, string[]? Roles);

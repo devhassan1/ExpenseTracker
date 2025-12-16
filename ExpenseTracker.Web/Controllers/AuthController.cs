@@ -19,7 +19,23 @@ public class AuthController(IAuthService auth, IConfiguration config) : Controll
             return Unauthorized();
         }
 
-        var token = await auth.CreateToken(authResult.UserID,req.Username,authResult.Role);
+        var token = await auth.CreateToken(authResult.UserID, req.Username, authResult.Role);
         return Ok(new { token });
     }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest req, CancellationToken ct)
+    {
+        var result = await auth.RegisterUser(req, ct);
+
+        if (!result.IsSuccess)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(new
+        {
+            user_id = result.Value,
+            message = "User registered successfully"
+        });
+    }
+
 }

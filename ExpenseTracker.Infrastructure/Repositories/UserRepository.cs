@@ -28,10 +28,12 @@ namespace ExpenseTracker.Infrastructure.Repositories
         }
 
 
-        public async Task<Result<long>> RegisterAsync(RegisterRequest req, CancellationToken ct)
+        public async Task<Result<long>> RegisterUser(RegisterRequest req, CancellationToken ct)
         {
             // Example duplicate check: by Name (username). Adjust if you use Email, etc.
-            var exists = await _db.Users.AnyAsync(x => x.Name == req.Name, ct);
+            var exists = await _db.Users
+                .Where(x => x.Name == req.Name)
+                .CountAsync(ct )>0;
             if (exists)
                 return Result<long>.Fail("Username already exists");
 

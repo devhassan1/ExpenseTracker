@@ -26,7 +26,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapGet("/", () => "Expense Tracker API running with Controllers");
-
+app.MapFallbackToFile("/login.html");
 app.Run();
 

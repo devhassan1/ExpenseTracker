@@ -1,5 +1,4 @@
-﻿
-const apiBaseUrl = '/api';
+﻿const apiBaseUrl = '/api';
 
 const byId = id => document.getElementById(id);
 
@@ -60,12 +59,10 @@ async function postJSON(url, body) {
 // --- AUTH HELPERS ----------------------------------------------------
 
 async function authLogin({ username, password }) {
-    const resp = await fetch(`${apiBaseUrl}/auth/login`, {
+    const resp = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Server expects PascalCase? If yes, keep as below:
         body: JSON.stringify({ Username: username, Password: password })
-        // If your model binder prefers camelCase, use: { username, password }
     });
 
     if (!resp.ok) {
@@ -74,18 +71,21 @@ async function authLogin({ username, password }) {
     }
 
     const data = await resp.json();
-    if (!data?.token || typeof data.token !== 'string') {
-        throw new Error('Login did not return a token.');
-    }
     localStorage.setItem('jwt', data.token);
     return data;
 }
 
-async function authRegister({ username, password }) {
-    const resp = await fetch(`${apiBaseUrl}/auth/register`, {
+async function authRegister({ name, email, password, roleId, parentUserId }) {
+    const resp = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Username: username, Password: password })
+        body: JSON.stringify({
+            Name: name,
+            Email: email,
+            Password: password,
+            RoleId: roleId,
+            ParentUserId: parentUserId
+        })
     });
 
     if (!resp.ok) {
@@ -93,33 +93,17 @@ async function authRegister({ username, password }) {
         throw new Error(txt || resp.statusText);
     }
 
-    const data = await resp.json();
-    if (data?.token) {
-        localStorage.setItem('jwt', data.token);
-    }
-    return data;
+    return await resp.json();
 }
+
 
 // --- DECODE JWT ------------------------------------------------------
 
 function decodeJwt(token) {
     try {
         const payload = token.split('.')[1];
-        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-
-        // Decode Base64 with proper handling
-        const json = atob(base64);
-        // Some environments need UTF-8 handling; try both
-        let obj;
-        try {
-            obj = JSON.parse(decodeURIComponent(escape(json)));
-        } catch {
-            obj = JSON.parse(json);
-        }
-
-        const roleClaim =
-            obj['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ??
-            obj['roles'] ?? obj['role'];
+        const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+        const obj = JSON.parse(decodeURIComponent(escape(json)));
 
         return {
             userId:
@@ -128,7 +112,12 @@ function decodeJwt(token) {
             username:
                 obj['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
                 obj.name,
-            roles: Array.isArray(roleClaim) ? roleClaim : roleClaim ? [roleClaim] : [],
+            roles: (() => {
+                const r =
+                    obj['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
+                    obj.roles;
+                return Array.isArray(r) ? r : r ? [r] : [];
+            })(),
             raw: obj
         };
     } catch {
@@ -142,7 +131,7 @@ async function loadUsers(orgId, selectId) {
     const params = new URLSearchParams();
     if (orgId) params.append('orgId', orgId);
 
-    const url = `${apiBaseUrl}/users${params.toString() ? '?' + params.toString() : ''}`;
+    const url = `${apiBaseUrl}/users${params.toString() ? '?' + params : ''}`;
 
     let users = [];
     try {
@@ -159,55 +148,39 @@ async function loadUsers(orgId, selectId) {
 
     for (const u of Array.isArray(users) ? users : []) {
         const opt = document.createElement('option');
-        opt.value = String(u.id ?? '');
-        opt.textContent = u.name ?? u.username ?? `User ${u.id ?? ''}`;
+        opt.value = u.id;
+        opt.textContent = u.name ?? u.username ?? `User ${u.id}`;
         sel.appendChild(opt);
     }
 
     return users;
 }
-
-// --- LOAD TAGS (fixed URL, safe rendering) ---------------------------
-
 async function loadTags(selectId = 'exp-tags', opts = { includeGlobal: true }) {
     const select = document.getElementById(selectId);
     if (!select) {
-        console.warn(`loadTags: element #${selectId} not found; skipping render.`);
+        console.warn(`loadTags: element #${selectId} not found;
+            skipping render.`);
         return [];
     }
-
     const q = new URLSearchParams();
-    if (opts?.label) q.append('label', opts.label);
-    if (opts?.includeGlobal !== undefined) q.append('includeGlobal', String(opts.includeGlobal));
-
+    if (opts?.label)
+        q.append('label', opts.label);
+    if (opts?.includeGlobal !== undefined)
+        q.append('includeGlobal', String(opts.includeGlobal));
     let tags = [];
     try {
-        // FIX: remove spaces and build proper query
-        const url = `${apiBaseUrl}/tags${q.toString() ? '?' + q.toString() : ''}`;
-        tags = await getJSON(url);
+        tags = await getJSON(`/api/tags ? ${q.toString()}`);
     } catch (err) {
         console.error('loadTags failed:', err);
         setMsg('tags-msg', 'Could not load tags', true);
     }
-
     select.innerHTML = '';
-    (Array.isArray(tags) ? tags : []).forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = String(t.id ?? '');
-        opt.textContent = String(t.label ?? '');
-        select.appendChild(opt);
-    });
-
+    (Array.isArray(tags) ? tags : []).forEach(
+        t => {
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.textContent = t.label;
+            select.appendChild(opt);
+        });
     return tags;
 }
-
-// --- OPTIONAL: expose to global if your page scripts call them -------
-
-window.loadTags = loadTags;
-window.loadUsers = loadUsers;
-window.authLogin = authLogin;
-window.authRegister = authRegister;
-window.getJSON = getJSON;
-window.postJSON = postJSON;
-window.decodeJwt = decodeJwt;
-window.setMsg

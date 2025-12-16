@@ -36,16 +36,35 @@
         <!-- REGISTER PANEL -->
         <section id="register-panel" class="panel hidden">
             <h2>Create Account</h2>
+
             <form id="form-register">
                 <label>
                     Username
-                    <input id="reg-username" type="text" required />
+                    <input id="reg-name" type="text" required />
                 </label>
+
+                <label>
+                    Email
+                    <input id="reg-email" type="email" required />
+                </label>
+
                 <label>
                     Password
                     <input id="reg-password" type="password" required />
                 </label>
+
+                <label>
+                    RoleId
+                    <input id="reg-role" type="number" required />
+                </label>
+
+                <label>
+                    Parent ID
+                    <input id="reg-parent" type="number" required />
+                </label>
+
                 <button type="submit">Register</button>
+
                 <div id="register-msg" class="muted"></div>
 
                 <p style="margin-top:18px;" class="muted">
@@ -54,6 +73,7 @@
                 </p>
             </form>
         </section>
+
 
     </main>
 
@@ -74,7 +94,7 @@
             // === CONFIG: Update this to match your actual controller route ===
             // If your route is /Auth/Login or /api/Auth/Login, adjust accordingly.
             const LOGIN_URL = '/api/auth/Login';
-            const REGISTER_URL = '/api/auth/register'; // Optional: only if you have it
+            const REGISTER_URL = '/api/auth/Login'; // Optional: only if you have it
 
             // Minimal JWT decoder (no verification) — for convenience
             const decodeJwt = (token) => {
@@ -128,7 +148,7 @@
                         // 401 / 400 / etc
                         const text = await res.text();
                         // Try to extract message if server returns JSON
-                        let msg = 'Sign-in failed.';
+                        let msg = 'Incorrect Password';
                         try {
                             const maybeJson = JSON.parse(text);
                             msg = maybeJson.message || maybeJson.error || msg;
@@ -177,49 +197,46 @@
                 }
             });
 
-            // ====== REGISTER (optional — wire to your controller if available) ======
             byId('form-register').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 setMsg('register-msg', 'Creating account...');
 
-                const username = byId('reg-username').value.trim();
-                const password = byId('reg-password').value;
+                const payload = {
+                    name: byId('reg-name').value.trim(),
+                    email: byId('reg-email').value.trim(),
+                    password: byId('reg-password').value,
+                    roleId: Number(byId('reg-role').value),
+                    parentUserId: byId('reg-parent').value
+                        ? Number(byId('reg-parent').value)
+                        : null
+                };
 
-                if (!username || !password) {
-                    setMsg('register-msg', 'Username and password are required.', true);
+                if (!payload.name || !payload.email || !payload.password) {
+                    setMsg('register-msg', 'All fields are required.', true);
                     return;
                 }
 
                 try {
-                    // If you have an AuthController.Register, update REGISTER_URL accordingly.
-                    const res = await fetch(REGISTER_URL, {
+                    const res = await fetch('/api/auth/register', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ username, password })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
                     });
 
                     if (!res.ok) {
-                        const text = await res.text();
-                        let msg = 'Registration failed.';
-                        try {
-                            const maybeJson = JSON.parse(text);
-                            msg = maybeJson.message || maybeJson.error || msg;
-                        } catch (_) {
-                            msg = text || msg;
-                        }
-                        setMsg('register-msg', msg, true);
-                        return;
+                        const txt = await res.text();
+                        throw new Error(txt || 'Registration failed');
                     }
 
-                    setMsg('register-msg', 'Account created! You can now sign in.');
+                    setMsg('register-msg', 'Account created! Please sign in.');
                     hide('register-panel');
                     show('login-panel');
                 } catch (err) {
                     setMsg('register-msg', err.message || String(err), true);
                 }
             });
+
+
 
         })();
     </script>
