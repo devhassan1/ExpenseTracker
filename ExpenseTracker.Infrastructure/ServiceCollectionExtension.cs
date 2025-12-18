@@ -2,9 +2,9 @@
 using ExpenseTracker.Application.Interfaces.Repositories;
 using ExpenseTracker.Application.UseCases;
 using ExpenseTracker.Domain.Auth;
-using ExpenseTracker.Domain.Exports;
 using ExpenseTracker.Domain.Repositories;
 using ExpenseTracker.Infrastructure.Auth;
+using ExpenseTracker.Infrastructure.Exports;
 using ExpenseTracker.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -26,7 +26,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         // Cross-cutting
         services.AddScoped<IClock, SystemClock>();
-        services.AddScoped<IExportService, CsvExportService>();
+        services.AddScoped<IExportService, DocumentExportService>();
 
         // Users
         services.AddScoped<IUserRepository, UserRepository>();

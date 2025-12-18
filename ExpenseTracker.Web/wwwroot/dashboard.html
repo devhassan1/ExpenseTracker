@@ -59,7 +59,7 @@
             </section>
 
             <!-- SuperAdmin area: manage users -->
-            <section class="panel" id="superadmin-panel" style="display:none;">
+            <section class="panel" id="superadmin-panel">
                 <h2>All Users (SuperAdmin)</h2>
                 <div id="sa-msg" class="muted"></div>
                 <table id="users-table" style="width:100%;margin-top:12px;border-collapse:collapse;">
@@ -122,6 +122,82 @@
 
                 // load own expenses (or all for superadmin)
                 loadExpenses();
+
+                async function exportReport({ from, to, forUserId, format }) {
+                    // Normalize inputs
+                    const token = localStorage.getItem('jwt');
+                    const fmt = (format || 'csv').toLowerCase(); // csv | excel | pdf (server maps excel -> xlsx)
+                    // If inputs are blank, default to last 30 days (DateOnly yyyy-MM-dd)
+                    const now = new Date();
+                    const last30 = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
+                    const fromDate = from || toIsoDate(last30);
+                    const toDate = to || toIsoDate(now);
+
+                    // Build query string
+                    const qs = new URLSearchParams();
+                    if (fromDate) qs.append('from', fromDate);      // DateOnly yyyy-MM-dd
+                    if (toDate) qs.append('to', toDate);
+                    if (forUserId) qs.append('forUserId', forUserId);
+                    // Server expects: csv|xlsx|pdf (you’re sending “excel” from the UI)
+                    // Map 'excel' to 'xlsx' to be explicit (optional; server already handles it)
+                    qs.append('format', fmt === 'excel' ? 'xlsx' : fmt);
+
+                    const url = `/api/reports/export?${qs.toString()}`;
+
+                    // Fetch and download
+                    const res = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/octet-stream',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        }
+                    });
+
+                    if (!res.ok) {
+                        // Try to read problem details / JSON error
+                        let msg = `HTTP ${res.status}`;
+                        try {
+                            const text = await res.text();
+                            if (text) {
+                                try {
+                                    const json = JSON.parse(text);
+                                    msg += json?.error ? ` — ${json.error}` : ` — ${text}`;
+                                } catch {
+                                    msg += ` — ${text}`;
+                                }
+                            }
+                        } catch { /* ignore */ }
+                        throw new Error(msg);
+                    }
+
+                    // Get filename from Content-Disposition header if present
+                    const cd = res.headers.get('content-disposition') || '';
+                    const filename = parseFilenameFromContentDisposition(cd)
+                        || `expenses_${new Date().toISOString().replace(/[:.]/g, '-')}.${fmt === 'excel' ? 'xlsx' : fmt}`;
+
+                    const blob = await res.blob();
+                    const href = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = href;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => URL.revokeObjectURL(href), 2000);
+                }
+
+                function parseFilenameFromContentDisposition(cd) {
+                    // RFC 6266 handling: filename*=UTF-8''... OR filename="..."
+                    try {
+                        const matchStar = cd.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+                        if (matchStar && matchStar[1]) return decodeURIComponent(matchStar[1]);
+                        const matchQuoted = cd.match(/filename\s*=\s*\"([^"]+)\"/i);
+                        if (matchQuoted && matchQuoted[1]) return matchQuoted[1];
+                        const matchBare = cd.match(/filename\s*=\s*([^;]+)/i);
+                        if (matchBare && matchBare[1]) return matchBare[1].trim();
+                        return null;
+                    } catch { return null; }
+                }
 
                 byId('btn-export')?.addEventListener('click', async () => {
                     try {
@@ -186,6 +262,7 @@
                         setMsg('sa-msg', 'Loading users...');
                         const users = await getJSON('/api/users/loadAllUsers');
                         const body = byId('users-body');
+                        console.log(body);
                         if (!body) return;
                         body.innerHTML = '';
                         const arr = Array.isArray(users) ? users : [];
@@ -198,6 +275,8 @@
                         }
                         for (const u of arr) {
                             const tr = document.createElement('tr');
+                            console.log(u.id);
+                            console.log(u.name);
                             tr.innerHTML = `
                   <td style="padding:8px;border-bottom:1px solid #222">${u.id}</td>
                   <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(u.name)}</td>

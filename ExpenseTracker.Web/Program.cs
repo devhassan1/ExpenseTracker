@@ -3,8 +3,10 @@ using ExpenseTracker.Domain;
 using ExpenseTracker.Domain.Persistence;
 using ExpenseTracker.Infrastructure.Auth;
 using ExpenseTracker.Web;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+QuestPDF.Settings.License = LicenseType.Community;
 
 builder.Services
     .AddPersistence(builder.Configuration)

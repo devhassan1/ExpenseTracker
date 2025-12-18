@@ -1,4 +1,5 @@
-﻿using ExpenseTracker.Domain.ValueObjects;
+﻿using ExpenseTracker.Domain.Entities.ExpenseTracker.Domain.Entities;
+using ExpenseTracker.Domain.ValueObjects;
 
 namespace ExpenseTracker.Domain.Entities
 {
@@ -12,6 +13,7 @@ namespace ExpenseTracker.Domain.Entities
         public DateTime CreatedAt { get; set; }
 
         public void SetMoney(Money money) => Money = money;
+        public ICollection<ExpenseTag> ExpenseTags { get; set; } = new List<ExpenseTag>();
     }
 
 }

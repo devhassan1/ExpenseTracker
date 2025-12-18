@@ -1,14 +1,15 @@
-﻿using ExpenseTracker.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ExpenseTracker.Application.DTOs;
 
 namespace ExpenseTracker.Application.Interfaces.Repositories
 {
     public interface IExportService
     {
-        Task<byte[]> ExportExpensesAsync(IEnumerable<Expense> expenses, string format, CancellationToken ct);
+
+        Task<byte[]> ExportExpensesAsync(
+            IEnumerable<ExpenseListItem> items,
+            string format,
+            CancellationToken ct = default);
+
+
     }
 }

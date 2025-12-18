@@ -1,9 +1,9 @@
-﻿using ExpenseTracker.Application.Interfaces.Repositories;
+﻿using ExpenseTracker.Application.Interfaces.Common;
+using ExpenseTracker.Application.Interfaces.Repositories;
 using ExpenseTracker.Domain.Entities;
+using ExpenseTracker.Domain.Entities.ExpenseTracker.Domain.Entities;
 using ExpenseTracker.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
-
-using ExpenseTracker.Application.Interfaces.Common;
 
 namespace ExpenseTracker.Infrastructure.Repositories;
 
@@ -42,8 +42,12 @@ public sealed class TagRepository : ITagRepository
     }
 
     public Task AssignToExpense(long expenseId, long tagId, CancellationToken ct)
-        => _db.Database.ExecuteSqlInterpolatedAsync(
-            $"INSERT INTO EXPENSE_TAG (EXPENSE_ID, TAG_ID) VALUES ({expenseId}, {tagId})", ct);
+    {
+        _db.ExpenseTags.Add(new ExpenseTag { ExpenseId = expenseId, TagId = tagId });
+        // No SaveChanges here; UnitOfWork will save at the end
+        return Task.CompletedTask;
+    }
+
 
     public async Task<List<Tag>> ListAll(CancellationToken ct)
     {
@@ -51,4 +55,19 @@ public sealed class TagRepository : ITagRepository
             .AsNoTracking()
             .ToListAsync(ct);
     }
+
+    public Task AddLinksForExpenseAsync(Expense expense, IEnumerable<long> tagIds, CancellationToken ct)
+    {
+        foreach (var tId in tagIds ?? Enumerable.Empty<long>())
+        {
+            if (tId <= 0) continue;
+            _db.ExpenseTags.Add(new ExpenseTag
+            {
+                Expense = expense, // navigation; EF will set ExpenseId on save
+                TagId = tId
+            });
+        }
+        return Task.CompletedTask;
+    }
+
 }

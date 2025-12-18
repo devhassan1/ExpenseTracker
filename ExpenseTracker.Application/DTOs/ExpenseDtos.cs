@@ -34,7 +34,7 @@ namespace ExpenseTracker.Application.DTOs
 
     public sealed class ExportRequest
     {
-        public DateTime From { get; init; }
+        public DateTime From { get; init; } = DateTime.Now;
         public DateTime To { get; init; }
         public long? ForUserId { get; init; }
         public string Format { get; init; } = "csv";

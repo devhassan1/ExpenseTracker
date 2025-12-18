@@ -2,11 +2,7 @@
 using ExpenseTracker.Application.Interfaces.Repositories;
 using ExpenseTracker.Application.UseCases.Expenses;
 using ExpenseTracker.Common.Results;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ExpenseTracker.Application.UseCases.Reports;
 
@@ -21,15 +17,41 @@ public sealed class ExportExpensesUseCase
         _export = export;
     }
 
+
+
     public async Task<Result<byte[]>> ExecuteAsync(ExportRequest req, CancellationToken ct)
     {
         var listResult = await _list.ExecuteAsync(
-            new ExpenseTracker.Application.DTOs.ExpenseFilterRequest(req.From, req.To, req.ForUserId), ct);
+            new ExpenseFilterRequest(req.From, req.To, req.ForUserId), ct);
 
-        if (!listResult.IsSuccess) return Result<byte[]>.Fail(listResult.Error!);
+        if (!listResult.IsSuccess)
+            return Result<byte[]>.Fail(listResult.Error!);
 
-        var bytes = await _export.ExportExpensesAsync((IEnumerable<Domain.Entities.Expense>)listResult.Value!, req.Format.ToLowerInvariant(), ct);
-        return Result<byte[]>.Success(bytes);
+        var items = (IEnumerable<ExpenseListItem>)listResult.Value!;
+
+        try
+        {
+            var fmt = req.Format?.ToLowerInvariant() ?? "csv";
+            // Optional: normalize 'excel' to 'xlsx' here if you plan to support Excel later
+            var normalized = fmt == "excel" ? "xlsx" : fmt;
+
+            var bytes = await _export.ExportExpensesAsync(items, normalized, ct);
+            return Result<byte[]>.Success(bytes);
+        }
+        catch (NotSupportedException ex)
+        {
+            // Turn it into a clean failure (400) instead of 500
+            return Result<byte[]>.Fail(ex.Message);
+        }
+
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ExportExpensesAsync] ERROR: {ex}");
+            throw; // or rethrow so you see full stack in console
+        }
+
     }
+
+
 }
 

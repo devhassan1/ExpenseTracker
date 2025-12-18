@@ -11,4 +11,5 @@ public interface ITagRepository
     Task<List<Tag>> ListByCategory(long categoryId, CancellationToken ct);
     Task AssignToExpense(long expenseId, long tagId, CancellationToken ct);
     Task<List<Tag>> ListAll(CancellationToken ct);
+    Task AddLinksForExpenseAsync(Expense expense, IEnumerable<long> tagIds, CancellationToken ct);
 }
