@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using ExpenseTracker.Application.Interfaces.Exports;
 using ExpenseTracker.Application.UseCases.Expenses;
 using ExpenseTracker.Application.UseCases.Reports;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExpenseTracker.Application;
 
@@ -11,7 +12,8 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<AddExpenseUseCase>();
         services.AddScoped<ListExpensesUseCase>();
         services.AddScoped<ExportExpensesUseCase>();
-
+        services.AddScoped<IExpenseExporterFactory, ExpenseExporterFactory>();
+        services.AddScoped<ExportExpensesUseCase>();
         return services;
     }
 }

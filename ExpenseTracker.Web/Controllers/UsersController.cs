@@ -4,53 +4,29 @@ using ExpenseTracker.Application.Interfaces.Common;
 using ExpenseTracker.Application.Interfaces.Repositories;
 
 namespace ExpenseTracker.Web.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
+[Authorize] 
 public class UsersController(IUserRepository users, ICurrentUser currentUser) : ControllerBase
 {
     private readonly IUserRepository _users = users;
     private readonly ICurrentUser _currentUser = currentUser;
 
-    // GET api/users
-
-    [Authorize(Roles ="SuperAdmin")] // checks ONLY user's existing role claims
-    [HttpGet("loadAllUsers")]
+    [HttpGet]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
-        try
+        if (_currentUser.Role.Contains("SuperAdmin"))
         {
-            // SuperAdmin sees all
-            if (_currentUser.Role.Contains("SuperAdmin"))
-            {
-                return await SuperAdmin(ct);
-            }
-
-            // Admin sees children
-            if (_currentUser.Role.Contains("Admin"))
-            {
-                return await admin(ct);
-            }
-            return Ok();
+            var all = await _users.ListByParent(null, ct);
+            return Ok(all.Select(u => new { u.Id, u.Name, u.Email }));
         }
-        catch (Exception ex)
+  
+        if (_currentUser.Role.Contains("Admin"))
         {
-            throw;
+            var list = await _users.ListByParent(_currentUser.UserId, ct);
+            return Ok(list.Select(u => new { u.Id, u.Name, u.Email }));
         }
-    }
 
-    private async Task<IActionResult> admin(CancellationToken ct)
-    {
-        var list = await _users.ListByParent(_currentUser.UserId, ct);
-        var proj = list.Select(u => new { u.Id, u.Name, u.Email }).ToList();
-        return Ok(proj);
-    }
-
-    private async Task<IActionResult> SuperAdmin(CancellationToken ct)
-    {
-        var all = await _users.ListByParent(null, ct);
-        var proj = all.Select(u => new { u.Id, u.Name, u.Email }).ToList();
-        return Ok(proj);
+        return Forbid();
     }
 }
-

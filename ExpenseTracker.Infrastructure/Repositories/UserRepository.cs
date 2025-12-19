@@ -32,7 +32,7 @@ namespace ExpenseTracker.Infrastructure.Repositories
         {
             // Example duplicate check: by Name (username). Adjust if you use Email, etc.
             var exists = await _db.Users
-                .Where(x => x.Name == req.Name)
+                .Where(x => x.Name == req.Username)
                 .CountAsync(ct )>0;
             if (exists)
                 return Result<long>.Fail("Username already exists");
@@ -41,11 +41,11 @@ namespace ExpenseTracker.Infrastructure.Repositories
             // You can use ASP.NET Core Identity's PasswordHasher<TUser> or PBKDF2/Argon2.
             var user = new User
             {
-                Name = req.Name,
+                Name = req.Username,
                 Email = req.Email,
                 RoleId = req.RoleId,
                 parent_user_id = req.ParentUserId,
-                PasswordHash = req.Password // <-- TEMP: replace with hash
+                PasswordHash = req.Password
             };
 
             _db.Users.Add(user);

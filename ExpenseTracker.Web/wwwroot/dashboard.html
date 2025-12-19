@@ -61,7 +61,7 @@
             <!-- SuperAdmin area: manage users -->
             <section class="panel" id="superadmin-panel">
                 <h2>All Users (SuperAdmin)</h2>
-                <div id="sa-msg" class="muted"></div>
+                <div id="sa-msg"></div>
                 <table id="users-table" style="width:100%;margin-top:12px;border-collapse:collapse;">
                     <thead>
                         <tr>
@@ -89,7 +89,6 @@
                 // parse current user
                 const info = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
-                // --- PASTE THIS BLOCK RIGHT HERE ---
                 // read role from typical claim keys or a 'role' shortcut
                 const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
                 const rawRole =
@@ -138,8 +137,7 @@
                     if (fromDate) qs.append('from', fromDate);      // DateOnly yyyy-MM-dd
                     if (toDate) qs.append('to', toDate);
                     if (forUserId) qs.append('forUserId', forUserId);
-                    // Server expects: csv|xlsx|pdf (you’re sending “excel” from the UI)
-                    // Map 'excel' to 'xlsx' to be explicit (optional; server already handles it)
+                 
                     qs.append('format', fmt === 'excel' ? 'xlsx' : fmt);
 
                     const url = `/api/reports/export?${qs.toString()}`;
@@ -260,7 +258,7 @@
                 async function loadAllUsers() {
                     try {
                         setMsg('sa-msg', 'Loading users...');
-                        const users = await getJSON('/api/users/loadAllUsers');
+                        const users = await getJSON('/api/users');
                         const body = byId('users-body');
                         console.log(body);
                         if (!body) return;

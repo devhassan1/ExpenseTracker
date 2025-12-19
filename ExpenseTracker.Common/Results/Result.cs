@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 
 namespace ExpenseTracker.Common.Results
 {
-
-
     public class Result
     {
         public bool IsSuccess { get; }
@@ -51,5 +49,4 @@ namespace ExpenseTracker.Common.Results
             return new Result<T>(false, error, default);
         }
     }
-
-    }
+}

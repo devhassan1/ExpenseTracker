@@ -1,6 +1,4 @@
-﻿
-// src/ExpenseTracker.Application/Interfaces/Repositories/ITagRepository.cs
-using ExpenseTracker.Domain.Entities;
+﻿using ExpenseTracker.Domain.Entities;
 
 namespace ExpenseTracker.Application.Interfaces.Repositories;
 

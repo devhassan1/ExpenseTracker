@@ -8,7 +8,7 @@ namespace ExpenseTracker.Application.DTOs
 {
     public class RegisterRequest
     {
-        public string Name { get; set; } = default!;
+        public string Username { get; set; } = default!;
         public string? Email { get; set; }
         public string Password { get; set; } = default!;
         public long RoleId { get; set; } = 2;

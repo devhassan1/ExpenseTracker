@@ -44,7 +44,6 @@ public sealed class TagRepository : ITagRepository
     public Task AssignToExpense(long expenseId, long tagId, CancellationToken ct)
     {
         _db.ExpenseTags.Add(new ExpenseTag { ExpenseId = expenseId, TagId = tagId });
-        // No SaveChanges here; UnitOfWork will save at the end
         return Task.CompletedTask;
     }
 

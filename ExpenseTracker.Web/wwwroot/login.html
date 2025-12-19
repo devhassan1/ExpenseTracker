@@ -65,7 +65,7 @@
 
                 <button type="submit">Register</button>
 
-                <div id="register-msg" class="muted"></div>
+                <div id="register-msg"></div>
 
                 <p style="margin-top:18px;" class="muted">
                     Already have an account?
@@ -76,9 +76,6 @@
 
 
     </main>
-
-    <!-- If you still need other logic from app.js, keep it. Otherwise you can remove. -->
-    <!-- app.js</script> -->
 
     <script>
         (function () {
@@ -91,10 +88,8 @@
                 el.className = err ? 'error' : 'muted';
             };
 
-            // === CONFIG: Update this to match your actual controller route ===
-            // If your route is /Auth/Login or /api/Auth/Login, adjust accordingly.
             const LOGIN_URL = '/api/auth/Login';
-            const REGISTER_URL = '/api/auth/Login'; // Optional: only if you have it
+            const REGISTER_URL = '/api/auth/register'; 
 
             // Minimal JWT decoder (no verification) — for convenience
             const decodeJwt = (token) => {
@@ -145,10 +140,9 @@
                     });
 
                     if (!res.ok) {
-                        // 401 / 400 / etc
                         const text = await res.text();
                         // Try to extract message if server returns JSON
-                        let msg = 'Incorrect Password';
+                        let msg = 'Incorrect Password!';
                         try {
                             const maybeJson = JSON.parse(text);
                             msg = maybeJson.message || maybeJson.error || msg;
@@ -158,11 +152,6 @@
                         setMsg('login-msg', msg, true);
                         return;
                     }
-
-                    // Your controller may return:
-                    // A) JSON: { token: "..." }
-                    // B) Plain string: "eyJhbGciOi..."
-                    // We handle both.
 
                     let token;
                     const contentType = res.headers.get('Content-Type') || '';
@@ -202,7 +191,7 @@
                 setMsg('register-msg', 'Creating account...');
 
                 const payload = {
-                    name: byId('reg-name').value.trim(),
+                    username: byId('reg-name').value.trim(),
                     email: byId('reg-email').value.trim(),
                     password: byId('reg-password').value,
                     roleId: Number(byId('reg-role').value),
@@ -211,13 +200,13 @@
                         : null
                 };
 
-                if (!payload.name || !payload.email || !payload.password) {
+                if (!payload.username || !payload.email || !payload.password) {
                     setMsg('register-msg', 'All fields are required.', true);
                     return;
                 }
 
                 try {
-                    const res = await fetch('/api/auth/register', {
+                    const res = await fetch(REGISTER_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -225,7 +214,8 @@
 
                     if (!res.ok) {
                         const txt = await res.text();
-                        throw new Error(txt || 'Registration failed');
+                        console.log(txt);
+                        throw new Error('Registration failed!');
                     }
 
                     setMsg('register-msg', 'Account created! Please sign in.');
@@ -235,9 +225,6 @@
                     setMsg('register-msg', err.message || String(err), true);
                 }
             });
-
-
-
         })();
     </script>
 </body>

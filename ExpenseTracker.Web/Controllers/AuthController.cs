@@ -22,7 +22,7 @@ public class AuthController(IAuthService auth, IConfiguration config) : Controll
         var token = await auth.CreateToken(authResult.UserID, req.Username, authResult.Role);
         return Ok(new { token });
     }
-
+    
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest req, CancellationToken ct)
     {

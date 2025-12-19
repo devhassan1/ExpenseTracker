@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace ExpenseTracker.Application.Interfaces.Common
 {    public interface ICurrentUser
-
     {
         long UserId { get; }
         string Role { get; } // "SuperAdmin" | "Admin" | "User"
