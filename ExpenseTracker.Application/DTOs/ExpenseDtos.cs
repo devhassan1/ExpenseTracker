@@ -20,10 +20,6 @@ namespace ExpenseTracker.Application.DTOs
 
     public record ExpenseFilterRequest(DateTime From, DateTime To, long? ForUserId)
     {
-        //public ExpenseFilterRequest(DateTime from, DateTime to)
-        //    : this(from, to, null)
-        //{
-        //}
         public ExpenseFilterRequest(DateOnly? from, DateOnly? to, long? forUserId)
     : this(
         from?.ToDateTime(TimeOnly.MinValue) ?? DateTime.MinValue,
@@ -56,5 +52,4 @@ namespace ExpenseTracker.Application.DTOs
         format)
         { }
     }
-
 }

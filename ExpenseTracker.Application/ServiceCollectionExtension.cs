@@ -12,7 +12,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<AddExpenseUseCase>();
         services.AddScoped<ListExpensesUseCase>();
         services.AddScoped<ExportExpensesUseCase>();
-        services.AddScoped<IExpenseExporterFactory, ExpenseExporterFactory>();
+        services.AddScoped<IExportService, ExpenseExportService>();
         services.AddScoped<ExportExpensesUseCase>();
         return services;
     }

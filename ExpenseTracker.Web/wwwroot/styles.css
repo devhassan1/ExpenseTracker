@@ -1,6 +1,4 @@
-﻿
-
-:root {
+﻿:root {
     /* Base */
     --bg: #f7fafc; /* very light cool gray */
     --panel: #ffffff; /* white cards/panels */
@@ -21,6 +19,7 @@
     --input-focus: rgba(16, 185, 129, 0.35); /* emerald glow */
     --shadow: rgba(15, 23, 42, 0.08); /*  --shadow: rgba(15, 23, 42, 0.08);         /* subtle slate shadow */
 }
+
 html, body {
     background: var(--bg);
     color: var(--text);

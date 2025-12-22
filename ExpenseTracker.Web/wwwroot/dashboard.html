@@ -1,5 +1,4 @@
-﻿
-    <!doctype html>
+﻿    <!doctype html>
     <html lang="en">
     <head>
         <meta charset="utf-8" />
@@ -39,9 +38,25 @@
                     </label>
                     <button id="btn-export">Download Report</button>
                     <div style="flex:1;"></div>
+
+
+                    <div style="margin-top:12px;display:flex;gap:8px;">
+                        <button id="expense-prev">Prev</button>
+                        <span id="expense-page-info" class="muted"></span>
+                        <button id="expense-next">Next</button>
+                    </div>
+                    <label>
+                        Page Size
+                        <select id="expense-page-size">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </label>
                 </div>
 
-                <div id="list-msg" class="muted" style="margin-top:8px;"></div>
+               
+
 
                 <table id="expenses-table" style="width:100%;margin-top:12px;border-collapse:collapse;">
                     <thead>
@@ -72,6 +87,12 @@
                     </thead>
                     <tbody id="users-body"></tbody>
                 </table>
+
+                <div style="margin-top:12px;display:flex;gap:8px;">
+                    <button id="users-prev">Prev</button>
+                    <span id="users-page-info"></span>
+                    <button id="users-next">Next</button>
+                </div>
             </section>
         </main>
 
@@ -81,6 +102,41 @@
             (function () {
                 const byId = id => document.getElementById(id);
                 const setMsg = (id, text, err = false) => { const el = byId(id); if (!el) return; el.textContent = text; el.className = err ? 'error' : 'muted'; };
+
+                let expensePage = 1;
+                let expensePageSize = 20;
+                let usersPage = 1;
+
+
+                byId('expense-prev').onclick = () => {
+                    if (expensePage > 1) {
+                        expensePage--;
+                        loadExpenses();
+                    }
+                };
+
+                byId('expense-next').onclick = () => {
+                    expensePage++;
+                    loadExpenses();
+                };
+
+                byId('expense-page-size').onchange = e => {
+                    expensePageSize = +e.target.value;
+                    expensePage = 1;
+                    loadExpenses();
+                };
+
+                byId('users-prev').onclick = () => {
+                    if (usersPage > 1) {
+                        usersPage--;
+                        loadUsers();
+                    }
+                };
+
+                byId('users-next').onclick = () => {
+                    usersPage++;
+                    loadUsers();
+                };
 
                 // redirect if not logged in
                 const token = localStorage.getItem('jwt');
@@ -216,14 +272,21 @@
                     try {
                         setMsg('list-msg', 'Loading expenses...');
                         // backend List endpoint expects from & to and optional forUserId. We'll default to last 30 days
+                        const qs = new URLSearchParams({
+                            page: expensePage,
+                            pageSize: expensePageSize
+                        });
+
                         const to = new Date();
                         const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
                         const qFrom = toIsoDate(from);
                         const qTo = toIsoDate(to);
                         const forUserId = isSuper ? null : info.userId;
-                        const url = `/api/expenses?from=${encodeURIComponent(qFrom)}&to=${encodeURIComponent(qTo)}${forUserId ? `&forUserId=${forUserId}` : ''}`;
+                        const url = `/api/expenses?${qs.toString()}`;
                         const list = await getJSON(url);
-                        renderExpenses(list);
+                        renderExpenses(list.items ?? list);
+                        byId('expense-page-info').textContent = `Page ${expensePage}`;
+                        byId('list-msg').textContent = '';
                         setMsg('list-msg', 'Loaded ' + (list?.length ?? 0) + ' items.');
                     } catch (err) {
                         setMsg('list-msg', err.message || String(err), true);
@@ -258,9 +321,15 @@
                 async function loadAllUsers() {
                     try {
                         setMsg('sa-msg', 'Loading users...');
-                        const users = await getJSON('/api/users');
+                        const qs = new URLSearchParams({
+                            page: usersPage,
+                            pageSize: 10
+                        });
+
+                        const users = await getJSON(`/api/users?${qs.toString()}`);
                         const body = byId('users-body');
-                        console.log(body);
+                        byId('users-page-info').textContent = `Page ${usersPage}`;
+                        byId('sa-msg').textContent = '';
                         if (!body) return;
                         body.innerHTML = '';
                         const arr = Array.isArray(users) ? users : [];

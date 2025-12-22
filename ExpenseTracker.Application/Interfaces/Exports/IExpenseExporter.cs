@@ -10,7 +10,7 @@ namespace ExpenseTracker.Application.Interfaces.Exports
     public interface IExpenseExporter
     {
         string Format { get; } // "csv", "pdf", "xlsx"
-        Task<byte[]> ExportExpensesAsync(IEnumerable<ExpenseListItem> items, CancellationToken ct = default);
+        Task<byte[]> ExportAsync(IEnumerable<ExpenseListItem> items, CancellationToken ct = default);
     }
 
 }

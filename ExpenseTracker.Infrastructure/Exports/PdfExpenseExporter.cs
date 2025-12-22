@@ -1,73 +1,26 @@
-﻿
-// Infrastructure/Exports/DocumentExportService.cs
-using ExpenseTracker.Application.DTOs;
-using ExpenseTracker.Application.Interfaces.Repositories;
+﻿using ExpenseTracker.Application.DTOs;
+using ExpenseTracker.Application.Interfaces.Exports;
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System.Globalization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace ExpenseTracker.Infrastructure.Exports
 {
-    public sealed class DocumentExportService : IExportService
-    {
-        public string Format => throw new NotImplementedException();
 
-        static DocumentExportService()
+    public sealed class PdfExpenseExporter : IExpenseExporter
+    {
+        public string Format => "pdf";
+
+        static PdfExpenseExporter()
         {
             QuestPDF.Settings.License = LicenseType.Community;
         }
 
-        public Task<byte[]> ExportExpensesAsync(IEnumerable<ExpenseListItem> items, string format, CancellationToken ct = default)
-        {
-            var fmt = (format ?? "csv").Trim().ToLowerInvariant();
-
-            return fmt switch
-            {
-                "csv" => Task.FromResult(ExportCsv(items, ct)),
-                "pdf" => Task.FromResult(ExportPdf(items, ct)),
-                // add "xlsx" later if needed
-                _ => throw new NotSupportedException($"Export format '{format}' is not supported.")
-            };
-        }
-
-        // ---------- CSV ----------
-        private static byte[] ExportCsv(IEnumerable<ExpenseListItem> items, CancellationToken ct)
-        {
-            var sb = new StringBuilder(16 * 1024);
-            sb.AppendLine("Date,Amount,Currency,Description,Tags,User");
-
-            foreach (var e in items ?? Enumerable.Empty<ExpenseListItem>())
-            {
-                if (ct.IsCancellationRequested) ct.ThrowIfCancellationRequested();
-
-                var date = FormatDate(e.TxnDate);
-                var amount = e.Amount.ToString("0.##", CultureInfo.InvariantCulture);
-                var currency = e.Currency ?? string.Empty;
-                var desc = e.Description ?? string.Empty;
-                var tags = JoinTags(e);
-                var user = !string.IsNullOrWhiteSpace(e.UserName)
-                                 ? e.UserName!
-                                 : (e.UserId > 0 ? e.UserId.ToString() : string.Empty);
-
-                sb.AppendLine(string.Join(",",
-                    Csv(date), Csv(amount), Csv(currency), Csv(desc), Csv(tags), Csv(user)));
-            }
-
-            return Encoding.UTF8.GetBytes(sb.ToString());
-        }
-
-        private static string Csv(string? value)
-        {
-            var s = value ?? string.Empty;
-            var needsQuotes = s.Contains(',') || s.Contains('\n') || s.Contains('\r') || s.Contains('"');
-            if (s.Contains('"')) s = s.Replace("\"", "\"\"");
-            return needsQuotes ? $"\"{s}\"" : s;
-        }
-
-        // ---------- PDF ----------
-        private static byte[] ExportPdf(IEnumerable<ExpenseListItem> items, CancellationToken ct)
+        public Task<byte[]> ExportAsync(IEnumerable<ExpenseListItem> items, CancellationToken ct = default)
         {
             var list = (items ?? Enumerable.Empty<ExpenseListItem>()).ToList();
 
@@ -75,7 +28,7 @@ namespace ExpenseTracker.Infrastructure.Exports
             {
                 container.Page(page =>
                 {
-                    page.Size(PageSizes.A4);
+                    page.Size(QuestPDF.Helpers.PageSizes.A4);
                     page.Margin(20);
                     page.DefaultTextStyle(x => x.FontSize(10));
 
@@ -116,16 +69,16 @@ namespace ExpenseTracker.Infrastructure.Exports
 
                             foreach (var e in list)
                             {
-                                if (ct.IsCancellationRequested) ct.ThrowIfCancellationRequested();
+                                ct.ThrowIfCancellationRequested();
 
                                 table.Cell().Text(FormatDate(e.TxnDate));
-                                table.Cell().Text(e.Amount.ToString("0.##", CultureInfo.InvariantCulture));
+                                table.Cell().Text(e.Amount.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
                                 table.Cell().Text(e.Currency ?? string.Empty);
                                 table.Cell().Text(e.Description ?? string.Empty);
                                 table.Cell().Text(JoinTags(e));
                                 table.Cell().Text(!string.IsNullOrWhiteSpace(e.UserName)
-                                                    ? e.UserName!
-                                                    : (e.UserId > 0 ? e.UserId.ToString() : string.Empty));
+                                    ? e.UserName!
+                                    : (e.UserId > 0 ? e.UserId.ToString() : string.Empty));
                             }
                         });
                     });
@@ -140,10 +93,10 @@ namespace ExpenseTracker.Infrastructure.Exports
                 });
             }).GeneratePdf();
 
-            return bytes;
+            return Task.FromResult(bytes);
         }
 
-        // ---------- helpers ----------
+        // reuse helpers (same as CSV exporter)
         private static string FormatDate(object? date) => date switch
         {
             null => string.Empty,
@@ -156,11 +109,7 @@ namespace ExpenseTracker.Infrastructure.Exports
         {
             if (e.Tags is null) return string.Empty;
 
-            //if (e.Tags is IEnumerable<TagDto> s)
-            //    return string.Join("; ", s.Where(x => !string.IsNullOrWhiteSpace(x)));
-
-            var objTags = e.Tags as IEnumerable<object>;
-            if (objTags != null)
+            if (e.Tags is IEnumerable<object> objTags)
             {
                 var labels = new List<string>();
                 foreach (var t in objTags)
@@ -174,4 +123,5 @@ namespace ExpenseTracker.Infrastructure.Exports
             return string.Empty;
         }
     }
+
 }

@@ -26,7 +26,9 @@ public static class InfrastructureServiceCollectionExtensions
 
         // Cross-cutting
 
-        services.AddScoped<IExportService, DocumentExportService>();
+        services.AddScoped<IExpenseExporter, PdfExpenseExporter>();
+        services.AddScoped<IExpenseExporter, CsvExpenseExporter>();
+        services.AddScoped<IExpenseExporter, XlsxExpenseExporter>();
 
 
         // Users

@@ -1,5 +1,4 @@
-﻿
-using ExpenseTracker.Application.DTOs;
+﻿using ExpenseTracker.Application.DTOs;
 using ExpenseTracker.Application.UseCases.Expenses;
 using ExpenseTracker.Common.Results;
 
@@ -19,6 +18,9 @@ public sealed class ExpenseFacade
     public Task<Result<long>> AddAsync(AddExpenseRequest req, CancellationToken ct)
         => _add.ExecuteAsync(req, ct);
 
-    public Task<Result<IReadOnlyList<ExpenseListItem>>> ListAsync(ExpenseFilterRequest req, CancellationToken ct)
-        => _list.ExecuteAsync(req, ct);
+    public async Task<Result<List<ExpenseListItem>>> ListAsync(
+        ExpenseFilterRequest filter, int page, int pageSize, string? search, CancellationToken ct)
+    {
+        return await _list.GetPagedExpensesAsync(filter, page, pageSize, search, ct);
+    }
 }

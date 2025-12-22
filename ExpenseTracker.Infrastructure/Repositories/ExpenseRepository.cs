@@ -85,7 +85,85 @@ namespace ExpenseTracker.Infrastructure.Repositories
 
             return result;
         }
-    }
 
+        
+ public async Task<IReadOnlyList<ExpenseListItem>> ListByDateRangePaged(
+        long? userId,
+        DateTime from,
+        DateTime to,
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken ct)
+    {
+        var q = _db.Expenses.AsQueryable()
+            .Where(e => e.TxnDate >= from && e.TxnDate <= to);
+
+        if (userId is long uid)
+            q = q.Where(e => e.UserId == uid);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+                // Minimal change: basic contains; if you prefer DB-side LIKE, use EF.Functions.Like
+                q = q.Where(e =>
+                    e.Description != null && e.Description.Contains(term));
+        }
+
+        q = q.OrderByDescending(e => e.TxnDate);
+
+        var size = Math.Clamp(pageSize, 1, 200);
+        var pageIndex = Math.Max(page, 1);
+
+        var expenses = await q
+            .AsNoTracking()
+            .Skip((pageIndex - 1) * size)
+            .Take(size)
+            .ToListAsync(ct);
+
+        if (expenses.Count == 0)
+            return Array.Empty<ExpenseListItem>();
+
+        var result = new List<ExpenseListItem>(expenses.Count);
+
+        foreach (var e in expenses)
+        {
+            // Per-expense tag lookup (kept same for minimal change)
+            var tagIds = await _db.Database
+                .SqlQueryRaw<long>("SELECT TAG_ID FROM EXPENSE_TAG WHERE EXPENSE_ID = :p0", e.Id)
+                .ToListAsync(ct);
+
+            var tagDtos = await _db.Tags
+                .Where(t => tagIds.Contains(t.Id))
+                .AsNoTracking()
+                .Select(t => new TagDto(t.Id, t.Label))
+                .ToArrayAsync(ct);
+
+            // Username (best-effort, as in your original)
+            string? userName = null;
+            try
+            {
+                userName = await _db.Users
+                    .Where(u => u.Id == e.UserId)
+                    .Select(u => u.Name)
+                    .FirstOrDefaultAsync(ct);
+            }
+            catch { /* ignore if Users mapping not present */ }
+
+            result.Add(new ExpenseListItem(
+                e.Id,
+                e.UserId,
+                userName,
+                e.TxnDate,
+                e.Money.Amount,
+                "PKR",
+                e.Description,
+                tagDtos
+            ));
+        }
+
+        return result;
+    }
 }
+    }
 

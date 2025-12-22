@@ -28,16 +28,25 @@ public class ExpensesController : ControllerBase
     }
 
     // GET: api/expenses
+
     [HttpGet]
-    public async Task<IActionResult> ListAsync([FromQuery] DateOnly? from, [FromQuery] DateOnly? to, [FromQuery] long? forUserId, CancellationToken ct)
+    public async Task<IActionResult> ListAsync(
+        [FromQuery] DateOnly? from,
+        [FromQuery] DateOnly? to,
+        [FromQuery] long? forUserId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        CancellationToken ct = default)
     {
         var req = new ExpenseFilterRequest(from, to, forUserId);
 
-        var result = await _facade.ListAsync(req, ct);
+        var result = await _facade.ListAsync(req, page, pageSize, search, ct);
 
         if (!result.IsSuccess)
             return BadRequest(new { error = result.Error });
 
-        return Ok(result.Value);
+        return Ok(result.Value); // Will now return a limited list
     }
+
 }

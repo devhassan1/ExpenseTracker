@@ -37,14 +37,12 @@ namespace ExpenseTracker.Infrastructure.Repositories
             if (exists)
                 return Result<long>.Fail("Username already exists");
 
-            // TODO: Hash passwords! Never store plain text.
-            // You can use ASP.NET Core Identity's PasswordHasher<TUser> or PBKDF2/Argon2.
             var user = new User
             {
                 Name = req.Username,
                 Email = req.Email,
-                RoleId = req.RoleId,
                 parent_user_id = req.ParentUserId,
+                RoleId = req.RoleId,
                 PasswordHash = req.Password
             };
 
@@ -69,6 +67,40 @@ namespace ExpenseTracker.Infrastructure.Repositories
 
             return await query
                 .OrderBy(u => u.Name)
+                .ToListAsync(ct);
+        }
+
+
+        public async Task<IEnumerable<User>> ListByParentPaged(
+                  long? parentUserId,
+                  int page,
+                  int pageSize,
+                  string? search,
+                  CancellationToken ct = default)
+        {
+            var q = _db.Users.AsNoTracking();
+
+            if (parentUserId.HasValue)
+                q = q.Where(u => u.parent_user_id == parentUserId.Value);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+              
+                q = q.Where(u =>
+                    (u.Name != null && u.Name.Contains(term)) ||
+                    (u.Email != null && u.Email.Contains(term)));
+            }
+
+            // Default sort: Name asc (stable)
+            q = q.OrderBy(u => u.Name);
+
+            var safePage = Math.Max(page, 1);
+            var safeSize = Math.Clamp(pageSize, 1, 200);
+
+            return await q
+                .Skip((safePage - 1) * safeSize)
+                .Take(safeSize)
                 .ToListAsync(ct);
         }
     }
