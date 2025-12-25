@@ -1,0 +1,432 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Expense Tracker — Expenses</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        /* Layout */
+        body {
+            display: flex;
+            margin: 0;
+            height: 100vh;
+            background: var(--bg);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.25s ease;
+            box-shadow: 2px 0 6px var(--shadow);
+            z-index: 100;
+        }
+
+            .sidebar.hidden {
+                transform: translateX(-100%);
+            }
+
+            .sidebar header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px;
+                font-weight: 700;
+                font-size: 1.1rem;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .sidebar nav ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                flex: 1;
+            }
+
+                .sidebar nav ul li {
+                    padding: 14px 16px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    border-radius: 10px;
+                    margin: 6px 10px;
+                    transition: background 0.2s;
+                }
+
+                    .sidebar nav ul li:hover {
+                        background: rgba(16,184,129,0.1);
+                        color: var(--accent-700);
+                    }
+
+                    .sidebar nav ul li.hidden {
+                        display: none;
+                    }
+
+        /* Main content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-x: auto;
+        }
+
+        /* Topbar */
+        header.topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+            header.topbar h1 {
+                margin: 0;
+                font-size: 1.25rem;
+            }
+
+            header.topbar button {
+                margin-left: 12px;
+            }
+
+        /* Toggle button */
+        .toggle-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--accent);
+        }
+
+        /* Panel */
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 6px 20px var(--shadow);
+            margin: 24px;
+            overflow-x: auto;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px; /* allows horizontal scroll inside panel if needed */
+        }
+
+        th, td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .error {
+            color: var(--danger);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <header>
+            <span>Menu</span>
+            <button class="toggle-btn" id="btn-toggle">&#10005;</button>
+        </header>
+        <nav>
+            <ul>
+                <li id="menu-dashboard">Dashboard</li>
+                <li id="menu-expenses">Expenses</li>
+                <li id="menu-users">Users</li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main" id="main-content">
+        <header class="topbar">
+            <button class="toggle-btn" id="btn-open">&#9776;</button>
+            <h1>Expense Tracker</h1>
+            <div>
+                <button id="btn-add">Add Expense</button>
+                <button id="btn-logout">Sign out</button>
+            </div>
+        </header>
+
+        <section class="panel" id="expenses-panel">
+            <h2>My Expenses</h2>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+                <label>
+                    From
+                    <input id="filter-from" type="date" />
+                </label>
+                <label>
+                    To
+                    <input id="filter-to" type="date" />
+                </label>
+                <label>
+                    Format
+                    <select id="export-format">
+                        <option value="csv">CSV</option>
+                        <option value="excel">Excel</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </label>
+                <button id="btn-export">Download Report</button>
+                <div style="flex:1;"></div>
+                <div style="display:flex;gap:8px;">
+                    <button id="expense-prev">Prev</button>
+                    <span id="expense-page-info" class="muted"></span>
+                    <button id="expense-next">Next</button>
+                </div>
+                <label>
+                    Page Size
+                    <select id="expense-page-size">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </label>
+            </div>
+
+            <div id="list-msg" class="muted"></div>
+            <table id="expenses-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Currency</th>
+                        <th>Description</th>
+                        <th>Tags</th>
+                        <th>User</th>
+                    </tr>
+                </thead>
+                <tbody id="expenses-body"></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        (function () {
+            const byId = id => document.getElementById(id);
+            const sidebar = byId('sidebar');
+            const btnToggle = byId('btn-toggle');
+            const btnOpen = byId('btn-open');
+
+            btnToggle.onclick = () => sidebar.classList.add('hidden');
+            btnOpen.onclick = () => sidebar.classList.remove('hidden');
+
+            const token = localStorage.getItem('jwt');
+            if (!token) location.href = '/login.html';
+
+            function parseJwt(token) {
+                try { return JSON.parse(atob(token.split('.')[1])); } catch { return {}; }
+            }
+            const payload = parseJwt(token);
+            const username = payload?.name || payload?.unique_name || 'User';
+
+            const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
+            const rawRole = payload?.[ROLE_CLAIM] ?? payload?.role ?? '';
+            const roles = (Array.isArray(rawRole) ? rawRole : String(rawRole).split(/[,\s]+/))
+                .map(r => r.toLowerCase().trim());
+            const isSuper = roles.includes('superadmin') || roles.includes('super');
+
+            // Show/hide users menu
+            if (!isSuper) byId('menu-users').classList.add('hidden');
+
+            byId('btn-logout').onclick = () => { localStorage.removeItem('jwt'); location.href = '/login.html'; };
+            byId('btn-add').onclick = () => location.href = '/add-expense.html';
+            byId('menu-dashboard').onclick = () => location.href = '/dashboard.html';
+            byId('menu-expenses').onclick = () => location.href = '/expenses.html';
+
+            let expensePage = 1;
+            let expensePageSize = 10;
+            let usersPage = 1;
+
+            async function exportReport({ from, to, forUserId, format }) {
+                // Normalize inputs
+                const token = localStorage.getItem('jwt');
+                const fmt = (format || 'csv').toLowerCase(); // csv | excel | pdf (server maps excel -> xlsx)
+                // If inputs are blank, default to last 30 days (DateOnly yyyy-MM-dd)
+                const now = new Date();
+                const last30 = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
+                const fromDate = from || toIsoDate(last30);
+                const toDate = to || toIsoDate(now);
+
+                // Build query string
+                const qs = new URLSearchParams();
+                if (fromDate) qs.append('from', fromDate);      // DateOnly yyyy-MM-dd
+                if (toDate) qs.append('to', toDate);
+                if (forUserId) qs.append('forUserId', forUserId);
+
+                qs.append('format', fmt === 'excel' ? 'xlsx' : fmt);
+
+                const url = `/api/reports/export?${qs.toString()}`;
+
+                // Fetch and download
+                const res = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/octet-stream',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    }
+                });
+
+                if (!res.ok) {
+                    // Try to read problem details / JSON error
+                    let msg = `HTTP ${res.status}`;
+                    try {
+                        const text = await res.text();
+                        if (text) {
+                            try {
+                                const json = JSON.parse(text);
+                                msg += json?.error ? ` — ${json.error}` : ` — ${text}`;
+                            } catch {
+                                msg += ` — ${text}`;
+                            }
+                        }
+                    } catch { /* ignore */ }
+                    throw new Error(msg);
+                }
+
+                // Get filename from Content-Disposition header if present
+                const cd = res.headers.get('content-disposition') || '';
+                const filename = parseFilenameFromContentDisposition(cd)
+                    || `expenses_${new Date().toISOString().replace(/[:.]/g, '-')}.${fmt === 'excel' ? 'xlsx' : fmt}`;
+
+                const blob = await res.blob();
+                const href = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = href;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(href), 2000);
+            }
+
+            function parseFilenameFromContentDisposition(cd) {
+                // RFC 6266 handling: filename*=UTF-8''... OR filename="..."
+                try {
+                    const matchStar = cd.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+                    if (matchStar && matchStar[1]) return decodeURIComponent(matchStar[1]);
+                    const matchQuoted = cd.match(/filename\s*=\s*\"([^"]+)\"/i);
+                    if (matchQuoted && matchQuoted[1]) return matchQuoted[1];
+                    const matchBare = cd.match(/filename\s*=\s*([^;]+)/i);
+                    if (matchBare && matchBare[1]) return matchBare[1].trim();
+                    return null;
+                } catch { return null; }
+            }
+
+            byId('btn-export')?.addEventListener('click', async () => {
+                try {
+                    const from = byId('filter-from')?.value;
+                    const to = byId('filter-to')?.value;
+                    const fmt = byId('export-format')?.value || 'csv';
+                    setMsg('list-msg', 'Preparing report...');
+                    // if superadmin allowed to download all, don't pass forUserId; otherwise pass current user
+                    const forUserId = isSuper ? null : info.userId;
+                    await exportReport({ from, to, forUserId, format: fmt });
+                    setMsg('list-msg', 'Report downloaded.');
+                } catch (err) {
+                    setMsg('list-msg', err.message || String(err), true);
+                }
+            });
+
+
+            function toIsoDate(d) {
+                const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            }
+            function formatDate(s) {
+                if (!s) return '';
+                const d = new Date(s);
+                return d.toLocaleString();
+            }
+            function escapeHtml(s) {
+                return String(s).replace(/[&<>\"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+            }
+
+            async function loadExpenses() {
+                try {
+                    setMsg('list-msg', 'Loading expenses...');
+                    // backend List endpoint expects from & to and optional forUserId. We'll default to last 30 days
+                    const qs = new URLSearchParams({
+                        page: expensePage,
+                        pageSize: expensePageSize
+                    });
+
+                    const to = new Date();
+                    const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
+                    const qFrom = toIsoDate(from);
+                    const qTo = toIsoDate(to);
+                    const forUserId = isSuper ? null : info.userId;
+                    const url = `/api/expenses?${qs.toString()}`;
+                    const list = await getJSON(url);
+                    renderExpenses(list.items ?? list);
+                    byId('expense-page-info').textContent = `Page ${expensePage}`;
+                    byId('list-msg').textContent = '';
+                    setMsg('list-msg', 'Loaded ' + (list?.length ?? 0) + ' items.');
+                } catch (err) {
+                    setMsg('list-msg', err.message || String(err), true);
+                }
+            }
+
+            function renderExpenses(items) {
+                const body = byId('expenses-body');
+                //if (!body) return;
+                //body.innerHTML = '';
+                if (!items || items.length === 0) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = '<td colspan="6" style="padding:12px">No expenses</td>';
+                    body.appendChild(tr);
+                    return;
+                }
+                for (const e of items) {
+                    const tr = document.createElement('tr');
+                    const tags = (e.tags || []).map(t => t.label || t).join(', ');
+                    tr.innerHTML = `
+      <td style="padding:8px;border-bottom:1px solid #222">${formatDate(e.txnDate)}</td>
+      <td style="padding:8px;border-bottom:1px solid #222">${e.amount}</td>
+      <td style="padding:8px;border-bottom:1px solid #222">${e.currency}</td>
+      <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(e.description || '')}</td>
+      <td style="padding:8px;border-bottom:1px solid #222">${escapeHtml(tags)}</td>
+      <td style="padding:8px;border-bottom:1px solid #222">${e.userName ?? e.userId ?? ''}</td>
+`;
+                    body.appendChild(tr);
+                }
+            }
+
+            byId('expense-prev').onclick = () => {
+                if (expensePage > 1) {
+                    expensePage--;
+                    loadExpenses();
+                }
+            };
+
+            byId('expense-next').onclick = () => {
+                expensePage++;
+                loadExpenses();
+            };
+
+            byId('expense-page-size').onchange = e => {
+                expensePageSize = +e.target.value;
+                expensePage = 1;
+                loadExpenses();
+            };
+            loadExpenses();
+        })();
+    </script>
+</body>
+</html>

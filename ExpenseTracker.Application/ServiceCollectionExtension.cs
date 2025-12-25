@@ -1,4 +1,5 @@
 ﻿using ExpenseTracker.Application.Interfaces.Exports;
+using ExpenseTracker.Application.UseCases;
 using ExpenseTracker.Application.UseCases.Expenses;
 using ExpenseTracker.Application.UseCases.Reports;
 using Microsoft.Extensions.DependencyInjection;

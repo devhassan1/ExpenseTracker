@@ -1,80 +1,79 @@
-﻿    <!doctype html>
-    <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <title>Expense Tracker — Dashboard</title>
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <link rel="stylesheet" href="styles.css" />
-    </head>
-    <body>
-        <header>
-            <h1>Expense Tracker</h1>
-            <div style="margin-left:auto;padding-right:18px;">
-                <button id="btn-add" class="secondary">Add Expense</button>
-                <button id="btn-logout" class="secondary">Sign out</button>
-            </div>
-        </header>
+﻿<!--<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Expense Tracker — Dashboard</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header>
+        <h1>Expense Tracker</h1>
+        <div style="margin-left:auto;padding-right:18px;">
+            <button id="btn-add" class="secondary">Add Expense</button>
+            <button id="btn-logout" class="secondary">Sign out</button>
+        </div>
+    </header>
 
-        <main>
-            <section class="panel">
-                <h2>My Expenses</h2>
+    <main>
+        <section class="panel">
+            <h2>My Expenses</h2>
 
-                <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
-                    <label>
-                        From
-                        <input id="filter-from" type="date" />
-                    </label>
-                    <label>
-                        To
-                        <input id="filter-to" type="date" />
-                    </label>
-                    <label>
-                        Format
-                        <select id="export-format">
-                            <option value="csv">CSV</option>
-                            <option value="excel">Excel</option>
-                            <option value="pdf">PDF</option>
-                        </select>
-                    </label>
-                    <button id="btn-export">Download Report</button>
-                    <div style="flex:1;"></div>
+            <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+                <label>
+                    From
+                    <input id="filter-from" type="date" />
+                </label>
+                <label>
+                    To
+                    <input id="filter-to" type="date" />
+                </label>
+                <label>
+                    Format
+                    <select id="export-format">
+                        <option value="csv">CSV</option>
+                        <option value="excel">Excel</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </label>
+                <button id="btn-export">Download Report</button>
+                <div style="flex:1;"></div>
 
 
-                    <div style="margin-top:12px;display:flex;gap:8px;">
-                        <button id="expense-prev">Prev</button>
-                        <span id="expense-page-info" class="muted"></span>
-                        <button id="expense-next">Next</button>
-                    </div>
-                    <label>
-                        Page Size
-                        <select id="expense-page-size">
-                            <option value="10">10</option>
-                            <option value="20" selected>20</option>
-                            <option value="50">50</option>
-                        </select>
-                    </label>
+                <div style="margin-top:12px;display:flex;gap:8px;">
+                    <button id="expense-prev">Prev</button>
+                    <span id="expense-page-info" class="muted"></span>
+                    <button id="expense-next">Next</button>
                 </div>
+                <label>
+                    Page Size
+                    <select id="expense-page-size">
+                        <option value="10">10</option>
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                    </select>
+                </label>
+            </div>
 
-               
 
 
-                <table id="expenses-table" style="width:100%;margin-top:12px;border-collapse:collapse;">
-                    <thead>
-                        <tr>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Date</th>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Amount</th>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Currency</th>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Description</th>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Tags</th>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #222">User</th>
-                        </tr>
-                    </thead>
-                    <tbody id="expenses-body"></tbody>
-                </table>
-            </section>
 
-            <!-- SuperAdmin area: manage users -->
-            <section class="panel" id="superadmin-panel">
+            <table id="expenses-table" style="width:100%;margin-top:12px;border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Date</th>
+                        <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Amount</th>
+                        <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Currency</th>
+                        <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Description</th>
+                        <th style="text-align:left;padding:8px;border-bottom:1px solid #222">Tags</th>
+                        <th style="text-align:left;padding:8px;border-bottom:1px solid #222">User</th>
+                    </tr>
+                </thead>
+                <tbody id="expenses-body"></tbody>
+            </table>
+        </section>-->
+<!-- SuperAdmin area: manage users -->
+<!--<section class="panel" id="superadmin-panel">
                 <h2>All Users (SuperAdmin)</h2>
                 <div id="sa-msg"></div>
                 <table id="users-table" style="width:100%;margin-top:12px;border-collapse:collapse;">
@@ -172,7 +171,7 @@
                 byId('btn-logout')?.addEventListener('click', () => { localStorage.removeItem('jwt'); localStorage.removeItem('currentUser'); location.href = '/login.html'; });
                 byId('btn-add')?.addEventListener('click', () => location.href = '/add-expense.html');
 
-          
+
                     loadAllUsers();
 
                 // load own expenses (or all for superadmin)
@@ -193,7 +192,7 @@
                     if (fromDate) qs.append('from', fromDate);      // DateOnly yyyy-MM-dd
                     if (toDate) qs.append('to', toDate);
                     if (forUserId) qs.append('forUserId', forUserId);
-                 
+
                     qs.append('format', fmt === 'excel' ? 'xlsx' : fmt);
 
                     const url = `/api/reports/export?${qs.toString()}`;
@@ -374,4 +373,207 @@
         </script>
 
     </body>
+</html>-->
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Expense Tracker — Dashboard</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        /* Layout */
+        body {
+            display: flex;
+            margin: 0;
+            height: 100vh;
+            background: var(--bg);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.25s ease;
+            box-shadow: 2px 0 6px var(--shadow);
+            z-index: 100;
+        }
+
+            .sidebar.hidden {
+                transform: translateX(-100%);
+            }
+
+            .sidebar header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px;
+                font-weight: 700;
+                font-size: 1.1rem;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .sidebar nav ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                flex: 1;
+            }
+
+                .sidebar nav ul li {
+                    padding: 14px 16px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    border-radius: 10px;
+                    margin: 6px 10px;
+                    transition: background 0.2s;
+                }
+
+                    .sidebar nav ul li:hover {
+                        background: rgba(16,184,129,0.1);
+                        color: var(--accent-700);
+                    }
+
+                    .sidebar nav ul li.hidden {
+                        display: none;
+                    }
+
+        /* Main content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.25s ease;
+        }
+
+        header.topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+            header.topbar h1 {
+                margin: 0;
+                font-size: 1.25rem;
+            }
+
+            header.topbar button {
+                margin-left: 12px;
+            }
+
+        /* Toggle button always visible on topbar */
+        .toggle-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--accent);
+        }
+
+        /* Welcome text */
+        .welcome-msg {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: 600;
+            text-align: center;
+            padding: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <header>
+            <span>Menu</span>
+            <button class="toggle-btn" id="btn-toggle">&#10005;</button>
+        </header>
+        <nav>
+            <ul>
+                <li id="menu-expenses">Expenses</li>
+                <li id="menu-users">Users</li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main" id="main-content">
+        <header class="topbar">
+            <button class="toggle-btn" id="btn-open">&#9776;</button>
+            <h1>Expense Tracker</h1>
+            <div>
+                <button id="btn-logout">Sign out</button>
+            </div>
+        </header>
+
+        <main class="welcome-msg" id="welcome-msg">
+            Welcome!
+        </main>
+    </div>
+
+    <script>
+        (function () {
+            const byId = id => document.getElementById(id);
+
+            // Check login
+            const token = localStorage.getItem('jwt');
+            if (!token) location.href = '/login.html';
+
+            // Decode JWT to get user info
+            function parseJwt(token) {
+                try {
+                    return JSON.parse(atob(token.split('.')[1]));
+                } catch (e) {
+                    return {};
+                }
+            }
+            const payload = parseJwt(token);
+
+            // Get username
+            const username = payload?.name || payload?.unique_name || 'User';
+
+            // Welcome message based on time
+            const now = new Date(), h = now.getHours();
+            const greet = h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening';
+            byId('welcome-msg').textContent = `${greet}, ${username}!`;
+
+            // Robust role extraction
+            const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
+            const rawRole = payload?.[ROLE_CLAIM] ?? payload?.role ?? '';
+            const roles = (Array.isArray(rawRole) ? rawRole : String(rawRole).split(/[,\s]+/))
+                .map(r => r.toLowerCase().trim());
+            const isSuper = roles.includes('superadmin') || roles.includes('super');
+
+            // Menu redirects
+            byId('menu-expenses').onclick = () => location.href = '/expenses.html';
+            if (isSuper) {
+                byId('menu-users').onclick = () => location.href = '/users.html';
+            } else {
+                byId('menu-users').classList.add('hidden');
+            }
+
+            // Logout
+            byId('btn-logout').onclick = () => {
+                localStorage.removeItem('jwt');
+                location.href = '/login.html';
+            };
+
+            // Sidebar toggle
+            const sidebar = byId('sidebar');
+            const btnToggle = byId('btn-toggle');
+            const btnOpen = byId('btn-open');
+
+            btnToggle.onclick = () => sidebar.classList.add('hidden');
+            btnOpen.onclick = () => sidebar.classList.remove('hidden');
+        })();
+    </script>
+</body>
 </html>

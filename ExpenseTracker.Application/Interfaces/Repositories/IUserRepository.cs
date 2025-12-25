@@ -9,6 +9,7 @@ namespace ExpenseTracker.Application.Interfaces.Repositories
         Task<User?> GetByName(string name);
         Task<string> GetRoleByID(long id);
         Task<long> Create(User user, CancellationToken ct);
+
         Task<IReadOnlyList<User>> ListByParent(long? parentUserId, CancellationToken ct);
         Task<Result<long>> RegisterUser(RegisterRequest req, CancellationToken ct);
         Task<IEnumerable<User>> ListByParentPaged(long? parentUserId, int page, int pageSize, string? search,CancellationToken ct);

@@ -33,7 +33,7 @@ namespace ExpenseTracker.Infrastructure.Repositories
             // Example duplicate check: by Name (username). Adjust if you use Email, etc.
             var exists = await _db.Users
                 .Where(x => x.Name == req.Username)
-                .CountAsync(ct )>0;
+                .CountAsync(ct) > 0;
             if (exists)
                 return Result<long>.Fail("Username already exists");
 
@@ -86,7 +86,7 @@ namespace ExpenseTracker.Infrastructure.Repositories
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var term = search.Trim();
-              
+
                 q = q.Where(u =>
                     (u.Name != null && u.Name.Contains(term)) ||
                     (u.Email != null && u.Email.Contains(term)));

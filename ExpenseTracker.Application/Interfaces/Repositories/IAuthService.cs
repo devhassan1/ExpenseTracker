@@ -11,4 +11,4 @@ namespace ExpenseTracker.Application.Interfaces.Repositories
         Task<Result<string>> CreateToken(string userId, string username, IEnumerable<string>? roles = null);
     }
 
-    }
+}

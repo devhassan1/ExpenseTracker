@@ -1,0 +1,232 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Expense Tracker — Users</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+
+    <style>
+        /* Layout */
+        body {
+            display: flex;
+            margin: 0;
+            height: 100vh;
+            background: var(--bg);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: transform .25s ease;
+            box-shadow: 2px 0 6px var(--shadow);
+            z-index: 100;
+        }
+
+            .sidebar.hidden {
+                transform: translateX(-100%);
+            }
+
+            .sidebar header {
+                padding: 16px;
+                font-weight: 700;
+                display: flex;
+                justify-content: space-between;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .sidebar nav ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .sidebar nav li {
+                padding: 14px 16px;
+                margin: 6px 10px;
+                border-radius: 10px;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+                .sidebar nav li:hover,
+                .sidebar nav li.active {
+                    background: rgba(16,185,129,.12);
+                    color: var(--accent-700);
+                }
+
+        /* Main */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Topbar */
+        header.topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--accent);
+        }
+
+        /* Panel */
+        .panel {
+            margin: 24px;
+            width:100%;
+            border-collapse:collapse;
+            margin-top:12px
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px; /* allows horizontal scroll inside panel if needed */
+        }
+
+        th, td {
+            padding: 8px;
+            text-align:center;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <header>
+            <span>Menu</span>
+            <button class="toggle-btn" id="btn-close">✕</button>
+        </header>
+        <nav>
+            <ul>
+                <li id="menu-dashboard">Dashboard</li>
+                <li id="menu-expenses">Expenses</li>
+                <li id="menu-users" class="active">Users</li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+        <header class="topbar">
+            <button class="toggle-btn" id="btn-open">☰</button>
+            <h1>Expense Tracker</h1>
+            <button id="btn-logout">Sign out</button>
+        </header>
+
+        <main>
+            <section class="panel">
+                <h2>All Users (SuperAdmin)</h2>
+                <div id="sa-msg" class="muted"></div>
+
+                <table >
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-body"></tbody>
+                </table>
+
+                <div style="margin-top:12px;display:flex;gap:8px">
+                    <button id="users-prev">Prev</button>
+                    <span id="users-page-info" class="muted"></span>
+                    <button id="users-next">Next</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        (function () {
+            const byId = id => document.getElementById(id);
+
+            /* Auth */
+            const token = localStorage.getItem('jwt');
+            if (!token) location.href = '/login.html';
+
+            function parseJwt(t) {
+                try { return JSON.parse(atob(t.split('.')[1])); } catch { return {}; }
+            }
+            const payload = parseJwt(token);
+
+            /* Roles */
+            const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
+            const rawRole = payload?.[ROLE_CLAIM] ?? payload?.role ?? '';
+            const roles = (Array.isArray(rawRole) ? rawRole : String(rawRole).split(/[,\s]+/))
+                .map(r => r.toLowerCase().trim());
+            const isSuper = roles.includes('superadmin') || roles.includes('super');
+
+            if (!isSuper) location.href = '/dashboard.html';
+
+            /* Navigation */
+            byId('menu-dashboard').onclick = () => location.href = '/dashboard.html';
+            byId('menu-expenses').onclick = () => location.href = '/expenses.html';
+
+            /* Sidebar toggle */
+            const sidebar = byId('sidebar');
+            byId('btn-close').onclick = () => sidebar.classList.add('hidden');
+            byId('btn-open').onclick = () => sidebar.classList.remove('hidden');
+
+            /* Logout */
+            byId('btn-logout').onclick = () => {
+                localStorage.removeItem('jwt');
+                location.href = '/login.html';
+            };
+
+            /* Users */
+            let usersPage = 1;
+
+            async function loadAllUsers() {
+                try {
+                    setMsg('sa-msg', 'Loading users...');
+                    const users = await getJSON(`/api/users?page=${usersPage}&pageSize=10`);
+                    const body = byId('users-body');
+                    body.innerHTML = '';
+
+                    if (!users.length) {
+                        body.innerHTML = '<tr><td colspan="3">No users</td></tr>';
+                        return;
+                    }
+
+                    users.forEach(u => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${u.id}</td><td>${u.name}</td><td>${u.email ?? ''}</td>`;
+                        body.appendChild(tr);
+                    });
+
+                    byId('users-page-info').textContent = `Page ${usersPage}`;
+                    setMsg('sa-msg', `Loaded ${users.length} users.`);
+                } catch (e) {
+                    setMsg('sa-msg', e.message, true);
+                }
+            }
+
+            byId('users-prev').onclick = () => { if (usersPage > 1) { usersPage--; loadAllUsers(); } };
+            byId('users-next').onclick = () => { usersPage++; loadAllUsers(); };
+
+            loadAllUsers();
+        })();
+    </script>
+
+</body>
+</html>
