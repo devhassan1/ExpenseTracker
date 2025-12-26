@@ -53,7 +53,7 @@
                     <input id="reg-password" type="password" required />
                 </label>
 
-                <label>
+                <!--<label>
                     RoleId
                     <input id="reg-role" type="number" required />
                 </label>
@@ -61,7 +61,7 @@
                 <label>
                     Parent ID
                     <input id="reg-parent" type="number" required />
-                </label>
+                </label>-->
 
                 <button type="submit">Register</button>
 
@@ -194,10 +194,10 @@
                     username: byId('reg-name').value.trim(),
                     email: byId('reg-email').value.trim(),
                     password: byId('reg-password').value,
-                    roleId: Number(byId('reg-role').value),
-                    parentUserId: byId('reg-parent').value
-                        ? Number(byId('reg-parent').value)
-                        : null
+                    //roleId: Number(byId('reg-role').value),
+                    //parentUserId: byId('reg-parent').value
+                    //    ? Number(byId('reg-parent').value)
+                    //    : null
                 };
 
                 if (!payload.username || !payload.email || !payload.password) {
@@ -208,7 +208,7 @@
                 try {
                     const res = await fetch(REGISTER_URL, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', "Authorization": "Bearer "},
                         body: JSON.stringify(payload)
                     });
 

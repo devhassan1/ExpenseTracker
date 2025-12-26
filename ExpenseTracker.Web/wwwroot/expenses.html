@@ -235,6 +235,8 @@
             }
             const payload = parseJwt(token);
             const username = payload?.name || payload?.unique_name || 'User';
+            const userId = payload?.userId || payload?.sub || null;
+
 
             const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
             const rawRole = payload?.[ROLE_CLAIM] ?? payload?.role ?? '';
@@ -336,7 +338,7 @@
                     const fmt = byId('export-format')?.value || 'csv';
                     setMsg('list-msg', 'Preparing report...');
                     // if superadmin allowed to download all, don't pass forUserId; otherwise pass current user
-                    const forUserId = isSuper ? null : info.userId;
+                    const forUserId = isSuper ? null : userId;
                     await exportReport({ from, to, forUserId, format: fmt });
                     setMsg('list-msg', 'Report downloaded.');
                 } catch (err) {
@@ -371,7 +373,7 @@
                     const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
                     const qFrom = toIsoDate(from);
                     const qTo = toIsoDate(to);
-                    const forUserId = isSuper ? null : info.userId;
+                    const forUserId = isSuper ? null : userId;
                     const url = `/api/expenses?${qs.toString()}`;
                     const list = await getJSON(url);
                     renderExpenses(list.items ?? list);

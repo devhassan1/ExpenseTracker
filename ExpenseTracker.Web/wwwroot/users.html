@@ -87,10 +87,11 @@
         /* Panel */
         .panel {
             margin: 24px;
-            width:100%;
-            border-collapse:collapse;
-            margin-top:12px
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -99,9 +100,53 @@
 
         th, td {
             padding: 8px;
-            text-align:center;
+            text-align: center;
             font-size: 0.95rem;
         }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: var(--panel);
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid var(--border);
+            width: 300px;
+            border-radius: 10px;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .full-width-btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+        }
+
+            .full-width-btn:hover {
+                background-color: var(--accent-700);
+            }
     </style>
 </head>
 
@@ -135,7 +180,7 @@
                 <h2>All Users (SuperAdmin)</h2>
                 <div id="sa-msg" class="muted"></div>
 
-                <table >
+                <table>
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -151,7 +196,45 @@
                     <span id="users-page-info" class="muted"></span>
                     <button id="users-next">Next</button>
                 </div>
+
+                <div style="margin:12px 0">
+                    <button id="btn-add-user" class="full-width-btn" style="display:none">Add User</button>
+                </div>
+
             </section>
+
+
+            <!-- Add User Modal -->
+            <div id="add-user-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close-btn" id="modal-close">&times;</span>
+                    <h2>Add New User</h2>
+                    <form id="add-user-form">
+                        <label>
+                            Username:<br>
+                            <input type="text" id="new-username" required>
+                        </label>
+                        <br>
+                        <label>
+                            Email:<br>
+                            <input type="email" id="new-email">
+                        </label>
+                        <br>
+                        <label>
+                            Password:<br>
+                            <input type="password" id="new-password" required>
+                        </label>
+                        <br>
+                        <label style="display: block; margin-top: 8px;">
+                            <input type="checkbox" id="create-admin">
+                            Create as Admin
+                        </label>
+
+                        <button type="submit">Create User</button>
+                    </form>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -175,8 +258,69 @@
             const roles = (Array.isArray(rawRole) ? rawRole : String(rawRole).split(/[,\s]+/))
                 .map(r => r.toLowerCase().trim());
             const isSuper = roles.includes('superadmin') || roles.includes('super');
+            const isAdmin = roles.includes('Admin');
 
-            if (!isSuper) location.href = '/dashboard.html';
+            if (!isSuper && !isAdmin) location.href = '/dashboard.html';
+
+            const usersMenu = byId('menu-users');
+
+            if (isSuper || isAdmin) {
+                usersMenu.style.display = 'block';
+            } else {
+                usersMenu.style.display = 'none';
+            }
+
+            // Add User button
+            const btnAddUser = byId('btn-add-user');
+
+
+            // Modal elements
+            const modal = byId('add-user-modal');
+            const closeBtn = byId('modal-close');
+            const form = byId('add-user-form');
+
+            if (isSuper || isAdmin) {
+                btnAddUser.style.display = 'inline-block';
+                btnAddUser.onclick = () => modal.style.display = 'block';
+
+                closeBtn.onclick = () => modal.style.display = 'none';
+                window.onclick = (event) => {
+                    if (event.target === modal) modal.style.display = 'none';
+                };
+
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const username = byId('new-username').value.trim();
+                    const email = byId('new-email').value.trim();
+                    const password = byId('new-password').value.trim();
+
+                    if (!username || !password) return alert('Username and password are required');
+
+                    try {
+                        const res = await fetch('/api/auth/register', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + token
+                            },
+                            body: JSON.stringify({ username, email, password, createAdmin: document.getElementById('create-admin').checked })
+                        });
+
+                        if (!res.ok) throw new Error(await res.text());
+                        const id = await res.json();
+                        alert(`User created with ID ${id}`);
+                        modal.style.display = 'none';
+                        loadAllUsers(); // refresh table
+                        form.reset();
+                    } catch (err) {
+                        alert('Error: ' + err.message);
+                    }
+                };
+            } else {
+                btnAddUser.style.display = 'none';
+            }
+
+
 
             /* Navigation */
             byId('menu-dashboard').onclick = () => location.href = '/dashboard.html';

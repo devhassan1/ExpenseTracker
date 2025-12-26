@@ -1,5 +1,6 @@
 ﻿using ExpenseTracker.Application.DTOs;
 using ExpenseTracker.Infrastructure.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 
@@ -23,6 +24,7 @@ public class AuthController(IAuthService auth, IConfiguration config) : Controll
         return Ok(new { token });
     }
 
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest req, CancellationToken ct)
     {

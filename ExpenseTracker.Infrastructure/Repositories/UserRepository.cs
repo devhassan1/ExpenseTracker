@@ -19,7 +19,9 @@ namespace ExpenseTracker.Infrastructure.Repositories
 
         public async Task<long> Create(User user, CancellationToken ct)
         {
-            var exists = await _db.Users.AnyAsync(x => x.Name == user.Name, ct);
+            var exists = await _db.Users.Where(x => x.Name == user.Name)
+    .CountAsync(ct) > 0;
+            ;
             if (exists) throw new InvalidOperationException("Username already exists");
 
             _db.Users.Add(user);
@@ -28,28 +30,28 @@ namespace ExpenseTracker.Infrastructure.Repositories
         }
 
 
-        public async Task<Result<long>> RegisterUser(RegisterRequest req, CancellationToken ct)
-        {
-            // Example duplicate check: by Name (username). Adjust if you use Email, etc.
-            var exists = await _db.Users
-                .Where(x => x.Name == req.Username)
-                .CountAsync(ct) > 0;
-            if (exists)
-                return Result<long>.Fail("Username already exists");
+        //public async Task<Result<long>> RegisterUser(RegisterRequest req, CancellationToken ct)
+        //{
+        //    // Example duplicate check: by Name (username). Adjust if you use Email, etc.
+        //    var exists = await _db.Users
+        //        .Where(x => x.Name == req.Username)
+        //        .CountAsync(ct) > 0;
+        //    if (exists)
+        //        return Result<long>.Fail("Username already exists");
 
-            var user = new User
-            {
-                Name = req.Username,
-                Email = req.Email,
-                parent_user_id = req.ParentUserId,
-                RoleId = req.RoleId,
-                PasswordHash = req.Password
-            };
+        //    var user = new User
+        //    {
+        //        Name = req.Username,
+        //        Email = req.Email,
+        //        parent_user_id = req.ParentUserId,
+        //        RoleId = req.RoleId,
+        //        PasswordHash = req.Password
+        //    };
 
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync(ct);
-            return Result<long>.Success(user.Id);
-        }
+        //    _db.Users.Add(user);
+        //    await _db.SaveChangesAsync(ct);
+        //    return Result<long>.Success(user.Id);
+        //}
 
         public async Task<User?> GetByName(string name)
             => await _db.Users.Where(u => u.Name == name).FirstOrDefaultAsync();

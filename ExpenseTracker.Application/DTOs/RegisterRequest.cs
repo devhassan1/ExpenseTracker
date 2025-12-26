@@ -13,6 +13,8 @@ namespace ExpenseTracker.Application.DTOs
         public string Password { get; set; } = default!;
         public long RoleId { get; set; }
         public long ParentUserId { get; set; }
+
+        public bool CreateAdmin { get; set; }
     }
 
 }

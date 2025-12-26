@@ -42,11 +42,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         // User context
         services.AddHttpContextAccessor();
-        services.AddScoped<ICurrentUser>(sp =>
-        {
-            var http = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
-            return new CurrentUser(http?.User ?? new System.Security.Claims.ClaimsPrincipal());
-        });
+        services.AddScoped<ICurrentUser, CurrentUser>();
 
         return services;
     }
