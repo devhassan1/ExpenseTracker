@@ -5,36 +5,118 @@
     <title>Add Expense</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="stylesheet" href="styles.css" />
-    </head>
+    <style>
+        .selected-tags {
+            margin-top: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+            .selected-tags .tag-chip {
+                background-color: #007bff;
+                color: #fff;
+                padding: 2px 6px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+            }
+
+                .selected-tags .tag-chip span {
+                    margin-left: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                }
+
+        .suggestions {
+            list-style: none;
+            margin: 6px 0 0;
+            padding: 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #fff;
+        }
+
+            .suggestions li {
+                padding: 8px 10px;
+                cursor: pointer;
+            }
+
+                .suggestions li:hover, .suggestions li.active {
+                    background: #f4f6f8;
+                }
+
+            .suggestions .add {
+                color: #0b5;
+                font-weight: 600;
+            }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 16px;
+            background: #eef2f7;
+        }
+
+            .chip .remove {
+                background: transparent;
+                border: none;
+                cursor: pointer;
+                color: #555;
+                font-weight: 700;
+            }
+    </style>
+</head>
 <body>
     <main>
         <section class="panel">
             <h2>New Expense</h2>
             <form id="form-expense">
- Owner/User (referenced by script) 
-<div class="grid-3">
-    <label>
-        Amount (PKR default)
-        <input type="number" id="exp-amount" step="0.0001" min="0.0001" required />
-    </label>
-</div>
+                Owner/User (referenced by script)
+                <div class="grid-3">
+                    <label>
+                        Amount (PKR default)
+                        <input type="number" id="exp-amount" step="0.0001" min="0.0001" required />
+                    </label>
+                </div>
 
-<label>
-    Description
-    <textarea id="exp-desc" maxlength="500" placeholder="Optional details..."></textarea>
-</label>
+                <label>
+                    Description
+                    <textarea id="exp-desc" maxlength="500" placeholder="Optional details..."></textarea>
+                </label>
 
-<label>
-    Transaction Date/Time
-    <input type="datetime-local" id="exp-txn-date" required />
-</label>
+                <label>
+                    Transaction Date/Time
+                    <input type="datetime-local" id="exp-txn-date" required />
+                </label>
 
-<label>
-    Tags (choose one or more)
- MULTI-SELECT (dynamic; options populated by loadTags) 
-<select id="exp-tags" name="TagIds" required multiple class="form-select"></select>
+                <!--<label>
+                    Tags (choose one or more)
+                 MULTI-SELECT (dynamic; options populated by loadTags)
+                <select id="exp-tags" name="TagIds" required multiple class="form-select"></select>
+                                    <small id="tags-msg" class="muted"></small>
+                                </label>-->
+
+                <label>
+                    Tags (type to search or add)
+                    <input id="tag-input" type="text" placeholder="Type to search or add…" autocomplete="off" />
+                    <ul id="tag-suggestions" class="suggestions" role="listbox"></ul>
+
+                    <div id="tag-chips" class="chips" aria-live="polite"></div>
                     <small id="tags-msg" class="muted"></small>
                 </label>
+
 
                 <button type="submit">Create Expense</button>
                 <div id="exp-msg" class="muted"></div>
@@ -42,8 +124,9 @@
         </section>
     </main>
 
+
     <script>
-        (function () {
+        document.addEventListener('DOMContentLoaded', () => {
             // ---------- Helpers ----------
             const $ = (id) => document.getElementById(id);
             const msg = (id, text, err = false) => {
@@ -52,14 +135,12 @@
                 el.textContent = text;
                 el.className = err ? 'error' : 'muted';
             };
-
             const authHeaders = () => {
                 const token = localStorage.getItem('jwt');
                 const headers = { 'Content-Type': 'application/json' };
                 if (token) headers['Authorization'] = `Bearer ${token}`;
                 return headers;
             };
-
             async function getJSON(url) {
                 const res = await fetch(url, { headers: authHeaders() });
                 if (!res.ok) {
@@ -68,178 +149,276 @@
                 }
                 return res.json();
             }
-
             async function postJSON(url, body) {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: authHeaders(),
-                    body: JSON.stringify(body)
-                });
+                const res = await fetch(url, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
                 if (!res.ok) {
                     const text = await res.text();
                     throw new Error(text || `POST ${url} failed (${res.status})`);
                 }
-                return res.json().catch(() => ({})); // some endpoints may return empty
+                return res.json().catch(() => ({}));
             }
 
-            // ---------- FIXED loadTags ----------
-            async function loadTags(selectId = 'exp-tags', opts = { includeGlobal: true }) {
-                const select = document.getElementById(selectId);
-                if (!select) {
-                    console.warn(`loadTags: element #${selectId} not found; skipping render.`);
-                    return [];
+            // ---------- Element refs (now inside DOMContentLoaded) ----------
+            const form = $('form-expense');
+            const tagInput = $('tag-input');
+            const tagList = $('tag-suggestions');
+            const tagChips = $('tag-chips');
+            const userSelect = $('exp-user');             // may be missing; we handle null
+            const txnInput = $('exp-txn-date');
+
+            if (!form) {
+                console.error('form-expense not found; aborting script init.');
+                return;
+            }
+
+            // ---------- State ----------
+            let selectedTags = [];
+            let searchResults = [];
+            let activeIndex = -1;
+            let debounceTimer = null;
+
+            // ---------- Utility ----------
+            const debounce = (fn, delay = 250) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(fn, delay);
+            };
+
+            const renderChips = () => {
+                tagChips.innerHTML = '';
+                selectedTags.forEach(tag => {
+                    const div = document.createElement('div');
+                    div.className = 'chip';
+                    div.textContent = tag.label;
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'remove';
+                    btn.setAttribute('aria-label', `Remove ${tag.label}`);
+                    btn.textContent = '×';
+                    btn.addEventListener('click', () => {
+                        selectedTags = selectedTags.filter(t => t.id !== tag.id);
+                        renderChips();
+                    });
+
+                    div.appendChild(btn);
+                    tagChips.appendChild(div);
+                });
+            };
+
+            const renderSuggestions = (items, typed) => {
+                tagList.innerHTML = '';
+                activeIndex = -1;
+
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item.label;
+                    li.setAttribute('role', 'option');
+                    li.addEventListener('click', () => selectTag(item));
+                    tagList.appendChild(li);
+                });
+
+                const exact = items.find(x => x.label.toLowerCase().trim() === typed.toLowerCase().trim());
+                if (typed && !exact) {
+                    const liAdd = document.createElement('li');
+                    liAdd.className = 'add';
+                    liAdd.textContent = `Add "${typed}"`;
+                    liAdd.addEventListener('click', () => createTag(typed));
+                    tagList.appendChild(liAdd);
                 }
+            };
 
-                const q = new URLSearchParams();
-                if (opts?.label) q.append('label', opts.label);
-                if (opts?.includeGlobal !== undefined) q.append('includeGlobal', String(opts.includeGlobal));
+            const selectTag = (item) => {
+                if (!selectedTags.some(t => t.id === item.id)) {
+                    selectedTags.push({ id: item.id, label: item.label });
+                    renderChips();
+                }
+                tagInput.value = '';
+                tagList.innerHTML = '';
+            };
 
-                let tags = [];
+            const fetchTagSuggestions = async (q) => {
                 try {
-                    const url = `/api/tags?${q.toString()}`;
-                    tags = await getJSON(url);
+                    const url = `/api/tags/search?q=${encodeURIComponent(q)}&limit=15`;
+                    console.debug('GET', url);
+                    const data = await getJSON(url);
+                    searchResults = Array.isArray(data) ? data : [];
+                    renderSuggestions(searchResults, q);
+                    msg('tags-msg', '', false);
                 } catch (err) {
-                    console.error('loadTags failed:', err);
-                    msg('tags-msg', 'Could not load tags', true);
+                    console.error('fetchTagSuggestions error:', err);
+                    msg('tags-msg', 'Could not search tags. Are you logged in?', true);
+                    tagList.innerHTML = '';
                 }
+            };
 
-                // Render options
-                select.innerHTML = '';
-                (Array.isArray(tags) ? tags : []).forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = String(t.id ?? '');
-                    opt.textContent = String(t.label ?? '');
-                    select.appendChild(opt);
-                });
-
-                return tags;
-            }
-
-            // ---------- Optional: loadUsers for SuperAdmin ----------
-            async function loadUsers(parentId = null, selectId = 'exp-user') {
-                const sel = document.getElementById(selectId);
-                if (!sel) {
-                    console.warn(`loadUsers: element #${selectId} not found; skipping render.`);
-                    return [];
-                }
-                const q = new URLSearchParams();
-                if (parentId !== null && parentId !== undefined) q.append('parent', String(parentId));
-                let users = [];
+            const createTag = async (label) => {
+                const payload = { label: label.trim() };
+                if (!payload.label) return;
                 try {
-                    const url = `/api/users?${q.toString()}`;
-                    users = await getJSON(url);
+                    console.debug('POST /api/tags', payload);
+                    const created = await postJSON('/api/tags', payload);
+                    if (created && typeof created.id === 'number') {
+                        selectTag({ id: created.id, label: created.label });
+                        msg('tags-msg', '', false);
+                    } else {
+                        await fetchTagSuggestions(payload.label);
+                        const exact = searchResults.find(x => x.label.toLowerCase().trim() === payload.label.toLowerCase());
+                        if (exact) selectTag(exact);
+                        else throw new Error('Tag created but not returned');
+                    }
                 } catch (err) {
-                    console.error('loadUsers failed:', err);
-                    msg('exp-msg', 'Could not load users', true);
-                }
-                sel.innerHTML = '';
-                (Array.isArray(users) ? users : []).forEach(u => {
-                    const opt = document.createElement('option');
-                    opt.value = String(u.id ?? '');
-                    opt.textContent = String(u.name ?? '');
-                    sel.appendChild(opt);
-                });
-                return users;
-            }
-
-            // ---------- Auth checks & header actions ----------
-            document.addEventListener('DOMContentLoaded', async () => {
-                // Back/Logout
-                $('btn-back')?.addEventListener('click', () => history.back());
-                $('btn-logout')?.addEventListener('click', () => {
-                    localStorage.removeItem('jwt');
-                    localStorage.removeItem('currentUser');
-                    location.href = '/login.html';
-                });
-
-                // Require token; redirect if missing
-                const token = localStorage.getItem('jwt');
-                if (!token) {
-                    location.href = '/login.html';
-                    return;
-                }
-
-                // Decode user info (optional)
-                let info = {};
-                try {
-                    info = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                } catch { info = {}; }
-
-                const roles = Array.isArray(info?.roles) ? info.roles : [];
-                const isSuper = roles.includes('SuperAdmin');
-
-                if (!isSuper) {
-                    const ownerLabel = $('label-owner');
-                    if (ownerLabel) ownerLabel.style.display = 'none';
-                }
-
-                // Init tags
-                await loadTags('exp-tags', { includeGlobal: true });
-
-                // Init users
-                if (isSuper) {
-                    await loadUsers(null, 'exp-user');
-                } else {
-                    const sel = $('exp-user');
-                    if (sel) {
-                        const opt = document.createElement('option');
-                        opt.value = String(info.userId ?? '');
-                        opt.textContent = info.username ? String(info.username) : `User ${info.userId ?? ''}`;
-                        sel.appendChild(opt);
+                    console.error('createTag error:', err);
+                    // If a conflict, re-fetch and select exact
+                    await fetchTagSuggestions(payload.label);
+                    const exact = searchResults.find(x => x.label.toLowerCase().trim() === payload.label.toLowerCase());
+                    if (exact) {
+                        selectTag(exact);
+                        msg('tags-msg', 'Tag already existed; selected it.', false);
+                    } else {
+                        msg('tags-msg', 'Could not create tag. Check auth or server logs.', true);
                     }
                 }
+            };
 
-                // Set transaction date to now (local)
+            // ---------- Auth checks ----------
+            const token = localStorage.getItem('jwt');
+            if (!token) {
+                console.warn('No JWT; redirecting to login.');
+                location.href = '/login.html';
+                return;
+            }
+
+            let info = {};
+            try { info = JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { info = {}; }
+            const roles = Array.isArray(info?.roles) ? info.roles : [];
+            const isSuper = roles.includes('SuperAdmin');
+
+            if (!isSuper) {
+                const ownerLabel = $('label-owner');
+                if (ownerLabel) ownerLabel.style.display = 'none';
+            }
+
+            // ---------- Users init (optional) ----------
+            if (isSuper) {
+                // populate exp-user via your existing loadUsers if present
+            } else {
+                if (userSelect) {
+                    const opt = document.createElement('option');
+                    opt.value = String(info.userId ?? '');
+                    opt.textContent = info.username ? String(info.username) : `User ${info.userId ?? ''}`;
+                    userSelect.appendChild(opt);
+                }
+            }
+
+            // ---------- Txn date default ----------
+            if (txnInput) {
                 const now = new Date();
                 const pad = (n) => String(n).padStart(2, '0');
                 const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-                const txnInput = $('exp-txn-date');
-                if (txnInput) txnInput.value = local;
+                txnInput.value = local;
+            }
 
-                // Submit handler (send TagIds as array)
-                $('form-expense')?.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    try {
-                        const userSelect = $('exp-user');
-                        const userId = Number(userSelect?.value ?? NaN);
+            // ---------- Wire tag input events ----------
+            if (tagInput) {
+                tagInput.addEventListener('input', () => {
+                    const q = tagInput.value.trim();
+                    if (!q) { tagList.innerHTML = ''; return; }
+                    debounce(() => fetchTagSuggestions(q));
+                });
 
-                        const amount = Number($('exp-amount')?.value ?? NaN);
-                        if (!Number.isFinite(amount) || amount <= 0) throw new Error('Amount must be greater than 0.');
-
-                        const description = ($('exp-desc')?.value || '').trim() || null;
-
-                        const txnLocal = $('exp-txn-date')?.value;
-                        if (!txnLocal) throw new Error('Transaction date is required');
-
-                        const txnDate = new Date(txnLocal);
-                        if (isNaN(txnDate)) throw new Error('Invalid transaction date');
-
-                        const tagSel = $('exp-tags');
-                        const tagIds = Array.from(tagSel?.selectedOptions ?? []).map(o => Number(o.value));
-
-                        const payload = {
-                            ForUserId: Number.isFinite(userId) ? userId : null,
-                            createdByUserId: Number(info.userId),
-                            amount,
-                            description,
-                            txnDate: txnDate.toISOString(),
-                            TagIds: tagIds
-                        };
-
-                        await postJSON('/api/expenses', payload);
-                        msg('exp-msg', 'Expense created.');
-                        $('form-expense').reset();
-
-                        // Re-init date after reset
-                        const n2 = new Date();
-                        const local2 = `${n2.getFullYear()}-${pad(n2.getMonth() + 1)}-${pad(n2.getDate())}T${pad(n2.getHours())}:${pad(n2.getMinutes())}`;
-                        $('exp-txn-date').value = local2;
-                    } catch (err) {
-                        msg('exp-msg', err.message || String(err), true);
+                tagInput.addEventListener('keydown', (e) => {
+                    const items = Array.from(tagList.querySelectorAll('li'));
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        activeIndex = Math.min(activeIndex + 1, items.length - 1);
+                        items.forEach((li, i) => li.classList.toggle('active', i === activeIndex));
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        activeIndex = Math.max(activeIndex - 1, 0);
+                        items.forEach((li, i) => li.classList.toggle('active', i === activeIndex));
+                    } else if (e.key === 'Enter') {
+                        // Prevent the form from submitting when pressing Enter in the tag field
+                        e.preventDefault();
+                        const typed = tagInput.value.trim();
+                        if (activeIndex >= 0 && items[activeIndex]) {
+                            items[activeIndex].click();
+                            return;
+                        }
+                        if (!typed) return;
+                        const exact = searchResults.find(x => x.label.toLowerCase().trim() === typed.toLowerCase());
+                        if (exact) selectTag(exact);
+                        else createTag(typed);
+                    } else if (e.key === 'Escape') {
+                        tagList.innerHTML = '';
                     }
                 });
+            } else {
+                console.error('#tag-input not found');
+            }
+
+            // ---------- Prevent Enter on entire form if focus is tag input ----------
+            form.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && document.activeElement === tagInput) {
+                    e.preventDefault();
+                }
             });
-        })();
+
+            // ---------- Submit handler ----------
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const userId = Number(userSelect?.value ?? NaN);
+                    const amount = Number($('exp-amount')?.value ?? NaN);
+                    if (!Number.isFinite(amount) || amount <= 0) throw new Error('Amount must be greater than 0.');
+
+                    const description = ($('exp-desc')?.value || '').trim() || null;
+
+                    const txnLocal = txnInput?.value;
+                    if (!txnLocal) throw new Error('Transaction date is required');
+                    const txnDate = new Date(txnLocal);
+                    if (isNaN(txnDate)) throw new Error('Invalid transaction date');
+
+                    const tagIds = selectedTags.map(t => Number(t.id));
+                    if (!tagIds.length) { msg('tags-msg', 'Please select at least one tag', true); return; }
+
+                    const payload = {
+                        ForUserId: Number.isFinite(userId) ? userId : null,
+                        createdByUserId: Number(info.userId),
+                        amount,
+                        description,
+                        txnDate: txnDate.toISOString(),
+                        TagIds: tagIds
+                    };
+
+                    console.debug('POST /api/expenses', payload);
+                    await postJSON('/api/expenses', payload);
+
+                    msg('exp-msg', 'Expense created.');
+                    form.reset();
+                    selectedTags = [];
+                    renderChips();
+
+                    // Reset date
+                    if (txnInput) {
+                        const now = new Date();
+                        const pad = (n) => String(n).padStart(2, '0');
+                        const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                        txnInput.value = local;
+                    }
+                } catch (err) {
+                    console.error('submit error:', err);
+                    msg('exp-msg', err.message || String(err), true);
+                }
+            });
+
+            // ---------- Click outside to close suggestions ----------
+            document.addEventListener('click', (e) => {
+                if (!tagList.contains(e.target) && e.target !== tagInput) {
+                    tagList.innerHTML = '';
+                }
+            });
+        });
     </script>
-    </body>
+
+</body>
 </html>

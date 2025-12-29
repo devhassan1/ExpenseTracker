@@ -245,22 +245,30 @@
 
             /* Auth */
             const token = localStorage.getItem('jwt');
-            if (!token) location.href = '/login.html';
+            //if (!token) location.href = '/login.html';
 
             function parseJwt(t) {
                 try { return JSON.parse(atob(t.split('.')[1])); } catch { return {}; }
             }
             const payload = parseJwt(token);
-
+            console.log('JWT PAYLOAD:', payload);
             /* Roles */
             const ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
-            const rawRole = payload?.[ROLE_CLAIM] ?? payload?.role ?? '';
-            const roles = (Array.isArray(rawRole) ? rawRole : String(rawRole).split(/[,\s]+/))
-                .map(r => r.toLowerCase().trim());
-            const isSuper = roles.includes('superadmin') || roles.includes('super');
-            const isAdmin = roles.includes('Admin');
 
-            if (!isSuper && !isAdmin) location.href = '/dashboard.html';
+            const rawRole = payload?.[ROLE_CLAIM] ?? payload?.role ?? '';
+
+            const roles = (Array.isArray(rawRole) ? rawRole : [rawRole])
+                .map(r => String(r).toLowerCase().trim());
+
+            console.log('ROLES ARRAY:', roles);
+
+            const isSuper = roles.includes('superadmin') || roles.includes('super');
+            const isAdmin = roles.includes('admin');
+
+            console.log('isAdmin:', isAdmin, 'isSuper:', isSuper);
+
+
+            //if (!isSuper && !isAdmin) location.href = '/dashboard.html';
 
             const usersMenu = byId('menu-users');
 

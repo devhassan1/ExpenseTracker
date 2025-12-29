@@ -1,13 +1,19 @@
-﻿using ExpenseTracker.Domain.Entities;
+﻿
+// ExpenseTracker.Application.Interfaces.Repositories/ITagRepository.cs
+using ExpenseTracker.Domain.Entities;
 
-namespace ExpenseTracker.Application.Interfaces.Repositories;
-
-public interface ITagRepository
+namespace ExpenseTracker.Application.Interfaces.Repositories
 {
-    Task<Tag?> GetByLabel(string label, CancellationToken ct);
-    Task<long> Create(Tag tag, CancellationToken ct);
-    Task<List<Tag>> ListByCategory(long categoryId, CancellationToken ct);
-    Task AssignToExpense(long expenseId, long tagId, CancellationToken ct);
-    Task<List<Tag>> ListAll(CancellationToken ct);
-    Task AddLinksForExpenseAsync(Expense expense, IEnumerable<long> tagIds, CancellationToken ct);
+    public interface ITagRepository
+    {
+        Task<Tag?> GetByLabel(string label, CancellationToken ct);
+        Task<long> Create(Tag tag, CancellationToken ct);
+        Task<List<Tag>> ListByCategory(long categoryId, CancellationToken ct);
+        Task AssignToExpense(long expenseId, long tagId, CancellationToken ct);
+        Task<List<Tag>> ListAll(CancellationToken ct);
+        Task AddLinksForExpenseAsync(Expense expense, IEnumerable<long> tagIds, CancellationToken ct);
+
+        // NEW:
+        Task<IReadOnlyList<Tag>> SearchAsync(string q, int limit, CancellationToken ct);
+    }
 }
